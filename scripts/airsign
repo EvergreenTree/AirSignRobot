@@ -51,6 +51,10 @@ verify_image() {
   test -f "${room_path}"
   test -f "${solution_root}/autonomous_probe.py"
   test -f "${solution_root}/gripper_scene_gate2.py"
+  test -f "${solution_root}/base_motion_monitor.py"
+  test -f "${solution_root}/isaac_collision_geometry.py"
+  test -f "${solution_root}/joint_command_guard.py"
+  test -f "${solution_root}/se2_route_validator.py"
   test -f "${solution_root}/stage1_table_setup.py"
   test -f "${solution_root}/four_stage_rehearsal.py"
   test -f "${solution_root}/validate_four_stage_replay.py"
@@ -83,6 +87,10 @@ verify_image() {
 
   "${isaac_python}" - "${solution_root}/autonomous_probe.py" \
       "${solution_root}/gripper_scene_gate2.py" \
+      "${solution_root}/base_motion_monitor.py" \
+      "${solution_root}/isaac_collision_geometry.py" \
+      "${solution_root}/joint_command_guard.py" \
+      "${solution_root}/se2_route_validator.py" \
       "${solution_root}/stage1_table_setup.py" \
       "${solution_root}/four_stage_rehearsal.py" \
       "${solution_root}/validate_four_stage_replay.py" <<'PY'

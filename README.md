@@ -46,7 +46,7 @@ python3 scripts/validate_submission.py
 Expected final record:
 
 ```text
-AIRSIGN_SUBMISSION_CHECK {"checks_passed": 9, "failures": [], "passed": true}
+AIRSIGN_SUBMISSION_CHECK {"checks_passed": 10, "failures": [], "passed": true}
 ```
 
 This verifies controller syntax, the canonical replay schema and hashes,
@@ -199,12 +199,15 @@ docker run --rm \
   --head-placement A
 ```
 
-Available gates are `inspect`, `cup`, `tray-lift`, `tray-transport`, and `all`.
-The controller constructs the pinned official scene, commands only robot
+Available gates are `inspect`, `cup-preflight`, `cup`, `tray-lift`,
+`tray-transport`, and `all`. The `cup-preflight` gate moves the arms into a
+compact navigation posture and validates the full robot footprint over the
+planned route, but it issues no base, gripper, or task-object command. The
+controller constructs the pinned official scene, commands only robot
 articulation degrees of freedom, records task-object poses read-only, and exits
-nonzero when a navigation, IK, joint-effort, or physical-outcome gate fails. It
-writes `trajectory.json`, `metrics.json`, and `manifest.json` with controller,
-scene, and image provenance.
+nonzero when a posture, route, navigation, IK, joint-effort, or
+physical-outcome gate fails. It writes `trajectory.json`, `metrics.json`, and
+`manifest.json` with controller, scene, and image provenance.
 
 The tray gates are payload-stability experiments only. The tray is not one of
 the four scored Stage 1 objects and a tray-gate pass is not a rulebook
@@ -216,7 +219,10 @@ contract, so even a passing grasp, lift, release, or transport gate keeps
 `official_stage_complete: false` and `official_stage_score: null`.
 The retained exact-entrypoint diagnostics are indexed under
 [`evidence/stage1-physical-development/`](evidence/stage1-physical-development/);
-both fail before manipulation and are labeled non-canonical.
+all fail before manipulation and are labeled non-canonical. The latest
+no-base-motion diagnostic also records prismatic spine force separately from
+revolute-arm effort and stops before a joint target exceeds its participant
+continuity limit.
 
 ### Four-stage browser replay
 

@@ -70,6 +70,35 @@ def compile_python_sources() -> None:
         pass_check(f"Python syntax ({len(paths)} files)")
 
 
+def run_cpu_unit_tests() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_*.py",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        FAILURES.append(
+            "CPU route/controller diagnostic tests failed: "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
+        return
+    match = re.search(
+        r"Ran\s+(\d+)\s+tests?", result.stderr + result.stdout
+    )
+    count = match.group(1) if match else "all"
+    pass_check(f"CPU route/controller diagnostic tests ({count})")
+
+
 def validate_canonical_replay() -> None:
     validator = ROOT / "participant" / "validate_four_stage_replay.py"
     result = subprocess.run(
@@ -258,7 +287,7 @@ def validate_stage1_evidence_bundles() -> None:
             == controller_sha,
             f"{relative} controller provenance is internally inconsistent",
         )
-        if bundle.name == "cup-image-b":
+        if bundle.name == "cup-preflight-g":
             check(
                 controller_sha
                 == sha256_file(
@@ -436,7 +465,8 @@ def validate_stage1_development_contract() -> None:
         '"robot_links_teleported": False',
         '"task_object_mutation_api_used": False',
         "raw Lula IK failed; no failed solution was applied",
-        "collision/obstruction safety abort",
+        "steering_alignment_timeout",
+        '"external_contact_telemetry": "unavailable"',
         'os.environ.get("EBIM_COMMIT"',
     }:
         check(
@@ -451,6 +481,28 @@ def validate_stage1_development_contract() -> None:
         (
             "Stage 1 minimum planar command must be gated outside the "
             "position tolerance, guard tiny norms, and expose telemetry"
+        ),
+    )
+    check(
+        "BaseMotionMonitor(" in source
+        and '"steering_error_degrees"' in source
+        and '"drive_target_rad_s"' in source
+        and '"drive_measured_velocity_rad_s"' in source
+        and '"stall_monitor_basis"' in source,
+        (
+            "Stage 1 base diagnostics must gate stalls on steering-aligned "
+            "wheel motion and expose measured controller telemetry"
+        ),
+    )
+    check(
+        "joint_target_continuity_record(" in source
+        and "arm_and_spine_effort_record(" in source
+        and '"spine_force_abort_threshold_newtons": None' in source
+        and "--arm-max-target-step-rad" in source,
+        (
+            "Stage 1 arm commands must fail closed on discontinuous IK "
+            "targets and keep prismatic spine force separate from revolute "
+            "arm effort"
         ),
     )
     check(
@@ -502,7 +554,9 @@ def scan_for_secrets() -> None:
         "Google OAuth authorization code": re.compile(r"\b4/0A[A-Za-z0-9_-]{20,}"),
         "Google OAuth access token": re.compile(r"\bya29\.[A-Za-z0-9_-]{20,}"),
         "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"),
-        "GitHub token": re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"),
+        "GitHub token": re.compile(
+            r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"
+        ),
         "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
         "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
         "service-account private key": re.compile(r'"private_key"\s*:\s*"-----BEGIN'),
@@ -548,6 +602,7 @@ def validate_readme_contract() -> None:
 
 def main() -> int:
     compile_python_sources()
+    run_cpu_unit_tests()
     validate_canonical_replay()
     validate_evidence_boundaries()
     validate_stage1_evidence_bundles()

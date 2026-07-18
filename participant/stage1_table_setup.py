@@ -48,6 +48,24 @@ from gripper_profiles import (  # noqa: E402
     get_gripper_profile,
     get_profile_drive_gains,
 )
+from base_motion_monitor import (  # noqa: E402
+    BaseMotionMonitor,
+    BaseMotionObservation,
+)
+from isaac_collision_geometry import (  # noqa: E402
+    CollisionProxySet,
+    extract_collision_proxy_set,
+)
+from joint_command_guard import (  # noqa: E402
+    arm_and_spine_effort_record,
+    joint_target_continuity_record,
+)
+from se2_route_validator import (  # noqa: E402
+    Pose2,
+    RouteValidationConfig,
+    distance_to_polyline,
+    validate_route,
+)
 from isaacsim_fr3duo_teleop_bridge_args import (  # noqa: E402
     add_common_bridge_args,
 )
@@ -57,7 +75,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--gate",
-        choices=("inspect", "cup", "tray-lift", "tray-transport", "all"),
+        choices=(
+            "inspect",
+            "cup-preflight",
+            "cup",
+            "tray-lift",
+            "tray-transport",
+            "all",
+        ),
         default="cup",
     )
     parser.add_argument(
@@ -105,9 +130,39 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gripper-damping", type=float, default=35.0)
     parser.add_argument("--gripper-effort-abort", type=float, default=40.0)
     parser.add_argument("--arm-effort-abort", type=float, default=180.0)
+    parser.add_argument(
+        "--arm-max-target-step-rad", type=float, default=0.025
+    )
     parser.add_argument("--base-stall-seconds", type=float, default=1.0)
     parser.add_argument("--base-stall-grace-seconds", type=float, default=1.0)
     parser.add_argument("--base-stall-distance", type=float, default=0.015)
+    parser.add_argument(
+        "--base-steering-timeout-seconds", type=float, default=4.0
+    )
+    parser.add_argument(
+        "--base-drive-response-rad-s", type=float, default=0.10
+    )
+    parser.add_argument(
+        "--route-clearance-margin", type=float, default=0.08
+    )
+    parser.add_argument(
+        "--route-max-translation-step", type=float, default=0.025
+    )
+    parser.add_argument(
+        "--route-max-yaw-step-deg", type=float, default=2.0
+    )
+    parser.add_argument(
+        "--route-cross-track-tolerance", type=float, default=0.12
+    )
+    parser.add_argument(
+        "--navigation-stow-height", type=float, default=1.15
+    )
+    parser.add_argument(
+        "--navigation-stow-forward", type=float, default=0.48
+    )
+    parser.add_argument(
+        "--navigation-stow-lateral", type=float, default=0.28
+    )
     parser.add_argument("--cup-grasp-yaw-deg", type=float, default=90.0)
     parser.add_argument("--cup-pregrasp-clearance", type=float, default=0.12)
     parser.add_argument("--cup-grasp-z-offset", type=float, default=0.025)
@@ -625,6 +680,106 @@ def environment_top_level_inventory(stage: Any) -> list[dict[str, Any]]:
     return records
 
 
+def collision_prim_inventory(stage: Any) -> dict[str, Any]:
+    """Inventory enabled collision prims without treating bounds as clearance."""
+
+    purposes = [
+        UsdGeom.Tokens.default_,
+        UsdGeom.Tokens.render,
+        UsdGeom.Tokens.proxy,
+    ]
+    bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), purposes)
+    records: list[dict[str, Any]] = []
+    unresolved: list[str] = []
+    try:
+        prims = Usd.PrimRange.Stage(
+            stage, Usd.TraverseInstanceProxies()
+        )
+    except Exception:  # noqa: BLE001
+        prims = stage.Traverse()
+    seen_paths: set[str] = set()
+    for prim in prims:
+        path = str(prim.GetPath())
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        collision_attr = prim.GetAttribute("physics:collisionEnabled")
+        has_collision_api = prim.HasAPI(UsdPhysics.CollisionAPI)
+        if not (
+            has_collision_api
+            or (collision_attr and collision_attr.IsValid())
+        ):
+            continue
+        enabled_value = (
+            collision_attr.Get()
+            if collision_attr and collision_attr.IsValid()
+            else True
+        )
+        if enabled_value is False:
+            continue
+        record: dict[str, Any] = {
+            "prim_path": path,
+            "prim_type": str(prim.GetTypeName()),
+            "has_collision_api": bool(has_collision_api),
+            "instance": bool(prim.IsInstance()),
+            "instanceable": bool(prim.IsInstanceable()),
+            "under_robot": path == ROBOT_PRIM_PATH
+            or path.startswith(f"{ROBOT_PRIM_PATH}/"),
+        }
+        try:
+            bounds = bbox_cache.ComputeWorldBound(
+                prim
+            ).ComputeAlignedRange()
+            minimum = np.asarray(bounds.GetMin(), dtype=np.float64)
+            maximum = np.asarray(bounds.GetMax(), dtype=np.float64)
+            finite = bool(
+                np.all(np.isfinite(minimum))
+                and np.all(np.isfinite(maximum))
+                and np.all(minimum <= maximum)
+                and np.max(np.abs(np.concatenate((minimum, maximum))))
+                < 1e20
+            )
+            record["world_aabb"] = {
+                "min": rounded(minimum) if finite else None,
+                "max": rounded(maximum) if finite else None,
+            }
+            record["finite_world_bound"] = finite
+            if not finite:
+                unresolved.append(path)
+        except Exception as error:  # noqa: BLE001
+            record["world_aabb"] = {"min": None, "max": None}
+            record["finite_world_bound"] = False
+            record["bound_error"] = (
+                f"{type(error).__name__}: {error}"
+            )
+            unresolved.append(path)
+        records.append(record)
+    records.sort(key=lambda item: item["prim_path"])
+    robot_records = [record for record in records if record["under_robot"]]
+    environment_records = [
+        record for record in records if not record["under_robot"]
+    ]
+    return {
+        "classification": "read_only_collision_prim_inventory",
+        "clearance_certificate": False,
+        "limitation": (
+            "World-aligned bounds are diagnostic inventory only; they are "
+            "not a full-robot swept-volume clearance proof."
+        ),
+        "enabled_collision_prim_count": len(records),
+        "robot_collision_prim_count": len(robot_records),
+        "environment_collision_prim_count": len(environment_records),
+        "finite_world_bound_count": sum(
+            bool(record["finite_world_bound"]) for record in records
+        ),
+        "unresolved_prim_paths": unresolved,
+        "complete_finite_world_bound_coverage": not unresolved
+        and bool(robot_records)
+        and bool(environment_records),
+        "records": records,
+    }
+
+
 def discover_gripper_drivers(
     robot: SingleArticulation,
 ) -> dict[str, tuple[str, int]]:
@@ -680,6 +835,12 @@ class TraceRecorder:
         self.frames: list[dict[str, Any]] = []
         self.events: list[dict[str, Any]] = []
         self.current_phase = "initializing"
+        self.base_control: dict[str, Any] | None = None
+
+    def set_base_control(
+        self, diagnostics: dict[str, Any] | None
+    ) -> None:
+        self.base_control = diagnostics
 
     def set_phase(self, phase: str, *, intent: str) -> None:
         self.current_phase = phase
@@ -766,6 +927,7 @@ class TraceRecorder:
                         self.stage, self.object_paths
                     ).items()
                 },
+                "base_control": self.base_control,
             }
         )
 
@@ -979,34 +1141,132 @@ def move_tcp_pose(
     aborted = False
     abort_reason: str | None = None
     names = list(robot.dof_names)
+    arm_joint_names = tuple(
+        name
+        for name in names
+        if (
+            name.startswith("left_fr3v2_joint")
+            or name.startswith("right_fr3v2_joint")
+        )
+    )
+    spine_joint_name = "franka_spine_vertical_joint"
     arm_indices = np.asarray(
-        [
-            index
-            for index, name in enumerate(names)
-            if (
-                name.startswith("left_fr3v2_joint")
-                or name.startswith("right_fr3v2_joint")
-                or name == "franka_spine_vertical_joint"
-            )
-        ],
+        [names.index(name) for name in arm_joint_names],
         dtype=np.int64,
     )
+    joint_continuity_check_count = 0
+    first_joint_continuity_check: dict[str, Any] | None = None
+    worst_joint_continuity_check: dict[str, Any] | None = None
+    joint_continuity_violation: dict[str, Any] | None = None
     peak_arm_effort = 0.0
+    peak_arm_effort_joint: str | None = None
+    peak_arm_effort_by_joint = {
+        name: 0.0 for name in arm_joint_names
+    }
+    peak_abs_spine_force = 0.0
     arm_effort_samples = 0
+    spine_force_samples = 0
     effort_telemetry_initially_available = False
     effort_telemetry_nonfinite = False
+    initial_effort_record: dict[str, Any] | None = None
+
+    def assess_joint_continuity(
+        targets: dict[str, float],
+    ) -> dict[str, Any]:
+        nonlocal joint_continuity_check_count
+        nonlocal first_joint_continuity_check
+        nonlocal worst_joint_continuity_check
+        nonlocal joint_continuity_violation
+        record = joint_target_continuity_record(
+            dof_names=names,
+            current_positions=robot.get_joint_positions(),
+            targets=targets,
+            expected_names=arm_joint_names,
+            max_abs_delta_rad=ARGS.arm_max_target_step_rad,
+        )
+        joint_continuity_check_count += 1
+        if first_joint_continuity_check is None:
+            first_joint_continuity_check = record
+        candidate = record.get("max_abs_delta_rad")
+        current_worst = (
+            None
+            if worst_joint_continuity_check is None
+            else worst_joint_continuity_check.get("max_abs_delta_rad")
+        )
+        if (
+            worst_joint_continuity_check is None
+            or candidate is None
+            or (
+                current_worst is not None
+                and float(candidate) > float(current_worst)
+            )
+        ):
+            worst_joint_continuity_check = record
+        if not record["passed"]:
+            joint_continuity_violation = record
+        return record
+
+    def accumulate_effort(record: dict[str, Any]) -> None:
+        nonlocal peak_arm_effort
+        nonlocal peak_arm_effort_joint
+        nonlocal peak_abs_spine_force
+        for name, value in record.get(
+            "arm_effort_by_name", {}
+        ).items():
+            magnitude = abs(float(value))
+            peak_arm_effort_by_joint[name] = max(
+                peak_arm_effort_by_joint.get(name, 0.0),
+                magnitude,
+            )
+            if magnitude > peak_arm_effort:
+                peak_arm_effort = magnitude
+                peak_arm_effort_joint = name
+        spine_force = record.get("spine_force_newtons")
+        if spine_force is not None:
+            peak_abs_spine_force = max(
+                peak_abs_spine_force, abs(float(spine_force))
+            )
+
+    def describe_effort_failure(
+        record: dict[str, Any],
+        *,
+        context: str,
+    ) -> str:
+        if record.get("arm_threshold_exceeded"):
+            return (
+                "measured revolute-arm effort "
+                f"{record.get('peak_abs_arm_effort')} at "
+                f"{record.get('peak_abs_arm_effort_joint')} exceeded "
+                f"--arm-effort-abort during {context}"
+            )
+        return f"{record.get('reason')} during {context}"
+
     initial_efforts = measured_efforts(robot)
-    if arm_indices.size and initial_efforts is not None:
-        selected = initial_efforts[arm_indices]
+    if initial_efforts is not None:
+        initial_effort_record = arm_and_spine_effort_record(
+            dof_names=names,
+            measured_efforts=initial_efforts,
+            arm_joint_names=arm_joint_names,
+            spine_joint_name=spine_joint_name,
+            arm_effort_abort_threshold=ARGS.arm_effort_abort,
+        )
         effort_telemetry_initially_available = bool(
-            np.all(np.isfinite(selected))
+            initial_effort_record.get("peak_abs_arm_effort") is not None
+            and initial_effort_record.get("spine_force_newtons") is not None
         )
-        effort_telemetry_nonfinite = (
-            not effort_telemetry_initially_available
-        )
+        accumulate_effort(initial_effort_record)
+        if not initial_effort_record["passed"]:
+            aborted = True
+            abort_reason = describe_effort_failure(
+                initial_effort_record, context="initial telemetry"
+            )
+            effort_telemetry_nonfinite = "non-finite" in abort_reason
     if not effort_telemetry_initially_available:
         aborted = True
-        abort_reason = "finite arm effort telemetry unavailable before motion"
+        abort_reason = (
+            abort_reason
+            or "finite arm and spine effort telemetry unavailable before motion"
+        )
     for step in range(1, steps + 1):
         if aborted:
             break
@@ -1042,6 +1302,14 @@ def move_tcp_pose(
             break
         left_successes += int(result.left_succeeded)
         right_successes += int(result.right_succeeded)
+        continuity = assess_joint_continuity(result.combined)
+        if not continuity["passed"]:
+            aborted = True
+            abort_reason = (
+                "IK joint target continuity gate failed before command: "
+                f"{continuity['reason']}"
+            )
+            break
         apply_targets(robot, result.combined)
         recorder.step()
         efforts = measured_efforts(robot)
@@ -1049,21 +1317,25 @@ def move_tcp_pose(
             aborted = True
             abort_reason = "arm effort telemetry disappeared during motion"
             break
-        selected = efforts[arm_indices]
-        if not np.all(np.isfinite(selected)):
-            effort_telemetry_nonfinite = True
-            aborted = True
-            abort_reason = "non-finite arm effort telemetry during motion"
-            break
-        arm_effort_samples += 1
-        peak_arm_effort = max(
-            peak_arm_effort,
-            float(np.max(np.abs(selected))),
+        effort_record = arm_and_spine_effort_record(
+            dof_names=names,
+            measured_efforts=efforts,
+            arm_joint_names=arm_joint_names,
+            spine_joint_name=spine_joint_name,
+            arm_effort_abort_threshold=ARGS.arm_effort_abort,
         )
-        if peak_arm_effort > ARGS.arm_effort_abort:
+        accumulate_effort(effort_record)
+        if effort_record.get("spine_force_newtons") is not None:
+            spine_force_samples += 1
+        if effort_record.get("peak_abs_arm_effort") is not None:
+            arm_effort_samples += 1
+        if not effort_record["passed"]:
+            effort_telemetry_nonfinite = (
+                "non-finite" in str(effort_record.get("reason"))
+            )
             aborted = True
-            abort_reason = (
-                "measured arm-joint effort exceeded --arm-effort-abort"
+            abort_reason = describe_effort_failure(
+                effort_record, context="motion"
             )
             break
     for settle_step in range(1, settle_steps + 1):
@@ -1087,6 +1359,14 @@ def move_tcp_pose(
                 "applied"
             )
             break
+        continuity = assess_joint_continuity(result.combined)
+        if not continuity["passed"]:
+            aborted = True
+            abort_reason = (
+                "IK joint target continuity gate failed before settle "
+                f"command: {continuity['reason']}"
+            )
+            break
         apply_targets(robot, result.combined)
         recorder.step()
         efforts = measured_efforts(robot)
@@ -1094,21 +1374,25 @@ def move_tcp_pose(
             aborted = True
             abort_reason = "arm effort telemetry disappeared during settle"
             break
-        selected = efforts[arm_indices]
-        if not np.all(np.isfinite(selected)):
-            effort_telemetry_nonfinite = True
-            aborted = True
-            abort_reason = "non-finite arm effort telemetry during settle"
-            break
-        arm_effort_samples += 1
-        peak_arm_effort = max(
-            peak_arm_effort,
-            float(np.max(np.abs(selected))),
+        effort_record = arm_and_spine_effort_record(
+            dof_names=names,
+            measured_efforts=efforts,
+            arm_joint_names=arm_joint_names,
+            spine_joint_name=spine_joint_name,
+            arm_effort_abort_threshold=ARGS.arm_effort_abort,
         )
-        if peak_arm_effort > ARGS.arm_effort_abort:
+        accumulate_effort(effort_record)
+        if effort_record.get("spine_force_newtons") is not None:
+            spine_force_samples += 1
+        if effort_record.get("peak_abs_arm_effort") is not None:
+            arm_effort_samples += 1
+        if not effort_record["passed"]:
+            effort_telemetry_nonfinite = (
+                "non-finite" in str(effort_record.get("reason"))
+            )
             aborted = True
-            abort_reason = (
-                "measured arm-joint effort exceeded --arm-effort-abort"
+            abort_reason = describe_effort_failure(
+                effort_record, context="settle"
             )
             break
     if not aborted and arm_effort_samples < 1:
@@ -1156,12 +1440,45 @@ def move_tcp_pose(
         "aborted": aborted,
         "abort_reason": abort_reason,
         "peak_abs_measured_arm_effort": round(peak_arm_effort, 6),
+        "peak_abs_measured_arm_effort_joint": peak_arm_effort_joint,
+        "peak_abs_measured_arm_effort_by_joint": {
+            name: round(value, 6)
+            for name, value in peak_arm_effort_by_joint.items()
+        },
+        "initial_measured_arm_effort_by_joint": (
+            None
+            if initial_effort_record is None
+            else initial_effort_record.get("arm_effort_by_name")
+        ),
+        "initial_measured_spine_force_newtons": (
+            None
+            if initial_effort_record is None
+            else initial_effort_record.get("spine_force_newtons")
+        ),
+        "peak_abs_measured_spine_force_newtons": round(
+            peak_abs_spine_force, 6
+        ),
         "arm_effort_sample_count": arm_effort_samples,
+        "spine_force_sample_count": spine_force_samples,
         "effort_telemetry_initially_available": (
             effort_telemetry_initially_available
         ),
         "effort_telemetry_nonfinite": effort_telemetry_nonfinite,
         "arm_effort_abort_threshold": ARGS.arm_effort_abort,
+        "spine_force_abort_threshold_newtons": None,
+        "spine_force_policy": (
+            "finite telemetry required; measured prismatic force is recorded "
+            "separately and is not compared with the revolute-arm threshold"
+        ),
+        "joint_continuity_check_count": joint_continuity_check_count,
+        "first_joint_continuity_check": (
+            first_joint_continuity_check
+        ),
+        "worst_joint_continuity_check": (
+            worst_joint_continuity_check
+        ),
+        "joint_continuity_violation": joint_continuity_violation,
+        "arm_max_target_step_rad": ARGS.arm_max_target_step_rad,
         "abort_recovery_policy": (
             "hold_current_arm_articulation_no_automatic_release"
         ),
@@ -1207,6 +1524,189 @@ def move_tcp_pose(
     }
 
 
+def prepare_navigation_posture(
+    recorder: TraceRecorder,
+    robot: SingleArticulation,
+    ik: Any,
+) -> tuple[list[dict[str, Any]], CollisionProxySet]:
+    """Lift, retract, settle, then capture posture-specific collision proxies."""
+
+    gates: list[dict[str, Any]] = []
+    base_position, base_orientation = world_pose(robot)
+    current_left, current_right = ik.current_end_effector_poses(
+        base_position,
+        base_orientation,
+        spine_position(robot),
+    )
+    lift_height = max(
+        ARGS.navigation_stow_height,
+        float(current_left[0][2]),
+        float(current_right[0][2]),
+    )
+    left_lift = np.asarray(
+        (
+            current_left[0][0],
+            current_left[0][1],
+            lift_height,
+        ),
+        dtype=np.float64,
+    )
+    right_lift = np.asarray(
+        (
+            current_right[0][0],
+            current_right[0][1],
+            lift_height,
+        ),
+        dtype=np.float64,
+    )
+    gates.append(
+        move_tcp_pose(
+            recorder,
+            robot,
+            ik,
+            left_target=left_lift,
+            right_target=right_lift,
+            left_orientation=None,
+            right_orientation=None,
+            steps=ARGS.motion_steps,
+            settle_steps=ARGS.motion_settle_steps,
+            phase="navigation_stow_lift",
+            intent=(
+                "Raise both empty grippers vertically before retracting them "
+                "into the mobile-base navigation envelope."
+            ),
+        )
+    )
+    if not gates[-1]["passed"]:
+        return gates, CollisionProxySet(
+            robot=(),
+            environment=(),
+            support_surface_paths=(),
+            candidate_robot_paths=(),
+            candidate_environment_paths=(),
+            unresolved_paths=("navigation stow lift failed",),
+            traversal_backend="not_attempted",
+        )
+
+    base_position, base_orientation = world_pose(robot)
+    yaw = yaw_from_wxyz(base_orientation)
+
+    def target_from_body(forward: float, lateral: float) -> np.ndarray:
+        cosine = math.cos(yaw)
+        sine = math.sin(yaw)
+        return np.asarray(
+            (
+                base_position[0] + cosine * forward - sine * lateral,
+                base_position[1] + sine * forward + cosine * lateral,
+                lift_height,
+            ),
+            dtype=np.float64,
+        )
+
+    gates.append(
+        move_tcp_pose(
+            recorder,
+            robot,
+            ik,
+            left_target=target_from_body(
+                ARGS.navigation_stow_forward,
+                ARGS.navigation_stow_lateral,
+            ),
+            right_target=target_from_body(
+                ARGS.navigation_stow_forward,
+                -ARGS.navigation_stow_lateral,
+            ),
+            left_orientation=None,
+            right_orientation=None,
+            steps=ARGS.motion_steps,
+            settle_steps=ARGS.motion_settle_steps,
+            phase="navigation_stow_retract",
+            intent=(
+                "Retract both raised empty grippers to a symmetric compact "
+                "navigation posture."
+            ),
+        )
+    )
+    if not gates[-1]["passed"]:
+        return gates, CollisionProxySet(
+            robot=(),
+            environment=(),
+            support_surface_paths=(),
+            candidate_robot_paths=(),
+            candidate_environment_paths=(),
+            unresolved_paths=("navigation stow retraction failed",),
+            traversal_backend="not_attempted",
+        )
+
+    base_position, _ = world_pose(robot)
+    root_path = core._find_articulation_root_path(ROBOT_PRIM_PATH)
+    try:
+        collision_proxies = extract_collision_proxy_set(
+            recorder.stage,
+            robot_path=ROBOT_PRIM_PATH,
+            base_frame_path=root_path,
+            base_world_z=float(base_position[2]),
+        )
+    except Exception as error:  # noqa: BLE001
+        collision_proxies = CollisionProxySet(
+            robot=(),
+            environment=(),
+            support_surface_paths=(),
+            candidate_robot_paths=(),
+            candidate_environment_paths=(),
+            unresolved_paths=(
+                f"extractor [{type(error).__name__}: {error}]",
+            ),
+            traversal_backend="failed",
+        )
+    gates.append(
+        {
+            "phase": "navigation_collision_proxy_coverage",
+            "classification": (
+                "posture_specific_enabled_collider_coverage_gate"
+            ),
+            "passed": collision_proxies.complete,
+            "post_stow_proxy_coverage": collision_proxy_coverage_summary(
+                collision_proxies
+            ),
+            "collision_proxy_inventory": collision_proxies.record(),
+            "pass_definition": (
+                "every enabled robot and environment collision prim has a "
+                "finite posture-specific proxy and one support surface is "
+                "explicitly identified"
+            ),
+        }
+    )
+    return gates, collision_proxies
+
+
+def collision_proxy_coverage_summary(
+    collision_proxies: CollisionProxySet,
+) -> dict[str, Any]:
+    """Return concise coverage evidence for a posture-specific proxy set."""
+
+    return {
+        "capture_posture": "compact_navigation_stow",
+        "complete": collision_proxies.complete,
+        "traversal_backend": collision_proxies.traversal_backend,
+        "robot_proxy_count": len(collision_proxies.robot),
+        "candidate_robot_collision_prim_count": len(
+            collision_proxies.candidate_robot_paths
+        ),
+        "environment_proxy_count": len(collision_proxies.environment),
+        "candidate_environment_collision_prim_count": len(
+            collision_proxies.candidate_environment_paths
+        ),
+        "support_surface_count": len(
+            collision_proxies.support_surface_paths
+        ),
+        "support_surface_paths": list(
+            collision_proxies.support_surface_paths
+        ),
+        "unresolved_path_count": len(collision_proxies.unresolved_paths),
+    }
+
+
 def drive_base_to(
     recorder: TraceRecorder,
     robot: SingleArticulation,
@@ -1231,20 +1731,52 @@ def drive_base_to(
     start_step = recorder.sim_step
     path_length = 0.0
     previous_position, _ = world_pose(robot)
+    segment_start = previous_position[:2].copy()
+    segment_route = (
+        Pose2(
+            float(segment_start[0]),
+            float(segment_start[1]),
+            target_yaw,
+        ),
+        Pose2(float(target_xy[0]), float(target_xy[1]), target_yaw),
+    )
     steps = 0
     aborted = False
     abort_reason: str | None = None
+    abort_classification: str | None = None
     drive_indices = np.asarray(drive_ids, dtype=np.int64)
-    stall_window_steps = max(
-        2, int(round(ARGS.base_stall_seconds * recorder.physics_hz))
+    steering_indices = np.asarray(steering_ids, dtype=np.int64)
+    steering_alignment_error = float(
+        getattr(
+            core,
+            "STEERING_FULL_SPEED_ERROR_RAD",
+            math.radians(8.0),
+        )
     )
-    stall_grace_steps = int(
-        round(ARGS.base_stall_grace_seconds * recorder.physics_hz)
+    motion_monitor = BaseMotionMonitor(
+        physics_hz=recorder.physics_hz,
+        minimum_planar_command_speed=ARGS.base_min_speed,
+        steering_alignment_error_rad=steering_alignment_error,
+        steering_timeout_seconds=ARGS.base_steering_timeout_seconds,
+        stall_grace_seconds=ARGS.base_stall_grace_seconds,
+        stall_window_seconds=ARGS.base_stall_seconds,
+        stall_distance_metres=ARGS.base_stall_distance,
+        measured_drive_response_rad_s=ARGS.base_drive_response_rad_s,
     )
-    position_history: list[np.ndarray] = []
     minimum_speed_floor_engagement_steps = 0
     minimum_speed_floor_first_step: int | None = None
     minimum_speed_floor_last_step: int | None = None
+    steering_alignment_wait_steps = 0
+    steering_alignment_first_step: int | None = None
+    stall_monitor_armed_first_step: int | None = None
+    max_abs_steering_error_degrees = 0.0
+    max_abs_drive_target_rad_s = 0.0
+    max_abs_measured_drive_velocity_rad_s = 0.0
+    peak_abs_measured_drive_effort = 0.0
+    drive_effort_sample_count = 0
+    base_telemetry_nonfinite = False
+    final_window_displacement: float | None = None
+    maximum_cross_track_error = 0.0
     try:
         for steps in range(1, max_steps + 1):
             position, orientation = world_pose(robot)
@@ -1252,9 +1784,6 @@ def drive_base_to(
                 np.linalg.norm(position[:2] - previous_position[:2])
             )
             previous_position = position
-            position_history.append(position[:2].copy())
-            if len(position_history) > stall_window_steps:
-                position_history.pop(0)
             yaw = yaw_from_wxyz(orientation)
             world_error = (
                 np.asarray(target_xy, dtype=np.float64) - position[:2]
@@ -1321,12 +1850,118 @@ def drive_base_to(
                 max_accel * dt,
             )
             command += delta
+            joint_positions = np.asarray(
+                robot.get_joint_positions(), dtype=np.float64
+            )
+            joint_velocities = robot.get_joint_velocities()
+            efforts = measured_efforts(robot)
+            if joint_velocities is None:
+                aborted = True
+                abort_classification = "base_telemetry_unavailable"
+                abort_reason = (
+                    "measured base joint velocity telemetry unavailable"
+                )
+                break
+            joint_velocities = np.asarray(
+                joint_velocities, dtype=np.float64
+            )
+            if (
+                joint_velocities.ndim != 1
+                or not np.all(
+                    np.isfinite(
+                        joint_velocities[
+                            np.concatenate(
+                                (steering_indices, drive_indices)
+                            )
+                        ]
+                    )
+                )
+                or efforts is None
+                or not np.all(
+                    np.isfinite(
+                        efforts[
+                            np.concatenate(
+                                (steering_indices, drive_indices)
+                            )
+                        ]
+                    )
+                )
+            ):
+                base_telemetry_nonfinite = True
+                aborted = True
+                abort_classification = "base_telemetry_unavailable"
+                abort_reason = (
+                    "finite steering, wheel, and effort telemetry is required"
+                )
+                break
             steering_targets, drive_targets = core._compute_drive_targets(
-                robot.get_joint_positions(),
+                joint_positions,
                 steering_ids,
                 float(command[0]),
                 float(command[1]),
                 float(command[2]),
+            )
+            measured_steering = joint_positions[steering_indices]
+            steering_errors = np.asarray(
+                [
+                    wrap_to_pi(float(target) - float(measured))
+                    for target, measured in zip(
+                        steering_targets, measured_steering
+                    )
+                ],
+                dtype=np.float64,
+            )
+            measured_drive_velocities = joint_velocities[drive_indices]
+            measured_drive_efforts = efforts[drive_indices]
+            max_abs_steering_error_degrees = max(
+                max_abs_steering_error_degrees,
+                math.degrees(
+                    float(np.max(np.abs(steering_errors)))
+                ),
+            )
+            max_abs_drive_target_rad_s = max(
+                max_abs_drive_target_rad_s,
+                float(np.max(np.abs(drive_targets))),
+            )
+            max_abs_measured_drive_velocity_rad_s = max(
+                max_abs_measured_drive_velocity_rad_s,
+                float(np.max(np.abs(measured_drive_velocities))),
+            )
+            peak_abs_measured_drive_effort = max(
+                peak_abs_measured_drive_effort,
+                float(np.max(np.abs(measured_drive_efforts))),
+            )
+            drive_effort_sample_count += 1
+            recorder.set_base_control(
+                {
+                    "measurement_timing": "immediately_before_physics_step",
+                    "target_xy": rounded(target_xy),
+                    "world_position_error": rounded(world_error),
+                    "body_position_error": rounded(body_error),
+                    "distance_error_metres": round(distance, 6),
+                    "yaw_error_degrees": round(
+                        math.degrees(yaw_error), 6
+                    ),
+                    "desired_body_twist": rounded(desired),
+                    "limited_body_twist": rounded(command),
+                    "steering_measured_rad": rounded(
+                        measured_steering
+                    ),
+                    "steering_target_rad": rounded(
+                        steering_targets
+                    ),
+                    "steering_error_degrees": rounded(
+                        np.degrees(steering_errors)
+                    ),
+                    "drive_target_rad_s": rounded(drive_targets),
+                    "drive_measured_velocity_rad_s": rounded(
+                        measured_drive_velocities
+                    ),
+                    "drive_measured_effort": rounded(
+                        measured_drive_efforts
+                    ),
+                    "external_contact_telemetry": "unavailable",
+                }
             )
             controller.apply_action(
                 ArticulationAction(
@@ -1343,23 +1978,95 @@ def drive_base_to(
                 )
             )
             recorder.step()
-            if (
-                steps >= stall_grace_steps + stall_window_steps
-                and len(position_history) == stall_window_steps
-                and float(np.linalg.norm(command[:2]))
-                >= ARGS.base_min_speed
-                and float(
-                    np.linalg.norm(
-                        position_history[-1] - position_history[0]
-                    )
-                )
-                < ARGS.base_stall_distance
-            ):
+            position_after, _orientation_after = world_pose(robot)
+            cross_track_error = distance_to_polyline(
+                Pose2(
+                    float(position_after[0]),
+                    float(position_after[1]),
+                    target_yaw,
+                ),
+                segment_route,
+            )
+            maximum_cross_track_error = max(
+                maximum_cross_track_error, cross_track_error
+            )
+            if cross_track_error > ARGS.route_cross_track_tolerance:
                 aborted = True
+                abort_classification = "cross_track_violation"
                 abort_reason = (
-                    "base motion stalled under command; treated as a "
-                    "collision/obstruction safety abort"
+                    "measured base pose left the preflighted route corridor"
                 )
+                break
+            joint_positions_after = np.asarray(
+                robot.get_joint_positions(), dtype=np.float64
+            )
+            joint_velocities_after = robot.get_joint_velocities()
+            efforts_after = measured_efforts(robot)
+            if joint_velocities_after is None or efforts_after is None:
+                aborted = True
+                abort_classification = "base_telemetry_unavailable"
+                abort_reason = (
+                    "base telemetry disappeared after the physics step"
+                )
+                break
+            joint_velocities_after = np.asarray(
+                joint_velocities_after, dtype=np.float64
+            )
+            measured_steering_after = joint_positions_after[
+                steering_indices
+            ]
+            steering_errors_after = tuple(
+                wrap_to_pi(float(target) - float(measured))
+                for target, measured in zip(
+                    steering_targets, measured_steering_after
+                )
+            )
+            decision = motion_monitor.update(
+                BaseMotionObservation(
+                    position_xy=(
+                        float(position_after[0]),
+                        float(position_after[1]),
+                    ),
+                    planar_command_speed=float(
+                        np.linalg.norm(command[:2])
+                    ),
+                    steering_errors_rad=steering_errors_after,
+                    drive_targets_rad_s=tuple(
+                        float(value) for value in drive_targets
+                    ),
+                    measured_drive_velocities_rad_s=tuple(
+                        float(value)
+                        for value in joint_velocities_after[drive_indices]
+                    ),
+                    measured_drive_efforts=tuple(
+                        float(value)
+                        for value in efforts_after[drive_indices]
+                    ),
+                    external_contact_observed=None,
+                )
+            )
+            steering_alignment_wait_steps = max(
+                steering_alignment_wait_steps,
+                decision.steering_wait_steps,
+            )
+            if (
+                decision.steering_aligned
+                and decision.drive_authorized
+                and steering_alignment_first_step is None
+            ):
+                steering_alignment_first_step = steps
+            if (
+                decision.stall_monitor_armed
+                and stall_monitor_armed_first_step is None
+            ):
+                stall_monitor_armed_first_step = steps
+            final_window_displacement = (
+                decision.window_displacement_metres
+            )
+            if decision.abort_classification is not None:
+                aborted = True
+                abort_classification = decision.abort_classification
+                abort_reason = decision.abort_reason
                 break
             if settled_steps >= 30:
                 break
@@ -1371,6 +2078,16 @@ def drive_base_to(
                 ),
                 joint_indices=drive_indices,
             )
+        )
+        recorder.set_base_control(
+            {
+                "measurement_timing": "post_command_stop",
+                "limited_body_twist": [0.0, 0.0, 0.0],
+                "drive_target_rad_s": [
+                    0.0 for _ in drive_ids
+                ],
+                "external_contact_telemetry": "unavailable",
+            }
         )
     for _ in range(30):
         recorder.step()
@@ -1384,6 +2101,7 @@ def drive_base_to(
         "end_step": recorder.sim_step,
         "steps": steps,
         "aborted": aborted,
+        "abort_classification": abort_classification,
         "abort_reason": abort_reason,
         "target_xy": rounded(target_xy),
         "final_xy": rounded(position[:2]),
@@ -1413,6 +2131,52 @@ def drive_base_to(
         "stall_window_seconds": ARGS.base_stall_seconds,
         "stall_grace_seconds": ARGS.base_stall_grace_seconds,
         "stall_distance_threshold_metres": ARGS.base_stall_distance,
+        "stall_monitor_basis": (
+            "consecutive steering-aligned nonzero wheel-target motion only"
+        ),
+        "stall_monitor_armed_first_step": (
+            stall_monitor_armed_first_step
+        ),
+        "stall_window_final_displacement_metres": (
+            None
+            if final_window_displacement is None
+            else round(final_window_displacement, 6)
+        ),
+        "steering_alignment_error_degrees": round(
+            math.degrees(steering_alignment_error), 6
+        ),
+        "steering_alignment_timeout_seconds": (
+            ARGS.base_steering_timeout_seconds
+        ),
+        "steering_alignment_max_wait_steps": (
+            steering_alignment_wait_steps
+        ),
+        "steering_alignment_first_step": steering_alignment_first_step,
+        "max_abs_steering_error_degrees": round(
+            max_abs_steering_error_degrees, 6
+        ),
+        "max_abs_drive_target_rad_s": round(
+            max_abs_drive_target_rad_s, 6
+        ),
+        "max_abs_measured_drive_velocity_rad_s": round(
+            max_abs_measured_drive_velocity_rad_s, 6
+        ),
+        "peak_abs_measured_drive_effort": round(
+            peak_abs_measured_drive_effort, 6
+        ),
+        "drive_effort_sample_count": drive_effort_sample_count,
+        "base_telemetry_nonfinite": base_telemetry_nonfinite,
+        "external_contact_telemetry": "unavailable",
+        "classification_limitation": (
+            "contact-backed obstruction cannot be claimed while external "
+            "contact telemetry is unavailable"
+        ),
+        "maximum_cross_track_error_metres": round(
+            maximum_cross_track_error, 6
+        ),
+        "cross_track_tolerance_metres": (
+            ARGS.route_cross_track_tolerance
+        ),
         "position_tolerance_metres": position_tolerance,
         "yaw_tolerance_degrees": math.degrees(yaw_tolerance),
         "passed": bool(
@@ -1422,7 +2186,7 @@ def drive_base_to(
         ),
         "pass_definition": (
             "acceleration-limited closed-loop base pose within tolerance "
-            "without stall/collision safety abort"
+            "without a steering, telemetry, or post-alignment motion abort"
         ),
     }
 
@@ -1486,6 +2250,82 @@ def fail_closed_result(
     }
 
 
+def validate_navigation_route(
+    robot: SingleArticulation,
+    collision_proxies: CollisionProxySet,
+    route_targets: Iterable[np.ndarray],
+    *,
+    target_yaw: float,
+    phase: str,
+) -> dict[str, Any]:
+    base_position, base_orientation = world_pose(robot)
+    current_yaw = yaw_from_wxyz(base_orientation)
+    waypoints = [
+        Pose2(
+            float(base_position[0]),
+            float(base_position[1]),
+            current_yaw,
+        )
+    ]
+    waypoints.extend(
+        Pose2(float(target[0]), float(target[1]), target_yaw)
+        for target in route_targets
+    )
+    certificate = validate_route(
+        collision_proxies.robot,
+        collision_proxies.environment,
+        waypoints,
+        RouteValidationConfig(
+            max_translation_step=ARGS.route_max_translation_step,
+            max_yaw_step_rad=math.radians(
+                ARGS.route_max_yaw_step_deg
+            ),
+            clearance_margin=ARGS.route_clearance_margin,
+            base_z=float(base_position[2]),
+            collision_coverage_complete=collision_proxies.complete,
+        ),
+    )
+    return {
+        "phase": phase,
+        "classification": (
+            "participant_conservative_full_robot_route_preflight"
+        ),
+        "passed": bool(certificate["passed"]),
+        "certificate": certificate,
+        "post_stow_proxy_coverage": collision_proxy_coverage_summary(
+            collision_proxies
+        ),
+        "collision_proxy_inventory_complete": (
+            collision_proxies.complete
+        ),
+        "robot_proxy_count": len(collision_proxies.robot),
+        "environment_proxy_count": len(
+            collision_proxies.environment
+        ),
+        "support_surface_paths": list(
+            collision_proxies.support_surface_paths
+        ),
+        "route_waypoints": [
+            {
+                "x": round(waypoint.x, 6),
+                "y": round(waypoint.y, 6),
+                "yaw_degrees": round(
+                    math.degrees(waypoint.yaw), 6
+                ),
+            }
+            for waypoint in waypoints
+        ],
+        "pass_definition": (
+            "complete enabled-collider coverage and no inflated 2.5-D "
+            "collision-proxy overlap over the entire sampled SE(2) route"
+        ),
+        "limitation": (
+            "This conservative participant preflight is not an organizer "
+            "collision or scoring contract."
+        ),
+    }
+
+
 def run_cup_gate(
     recorder: TraceRecorder,
     robot: SingleArticulation,
@@ -1493,8 +2333,15 @@ def run_cup_gate(
     steering_ids: list[int],
     drive_ids: list[int],
     drivers: dict[str, tuple[str, int]],
+    *,
+    execute: bool = True,
 ) -> dict[str, Any]:
     before = task_object_snapshot(recorder.stage, recorder.object_paths)
+    requested_gate_name = (
+        "cup_grasp_lift_release"
+        if execute
+        else "cup_navigation_posture_and_route_preflight"
+    )
     cup_start = object_position(before, "cup")
     _cup_min, cup_max = object_aabb(before, "cup")
     base_start, base_orientation = world_pose(robot)
@@ -1556,6 +2403,63 @@ def run_cup_gate(
             "Drive to the cup-aligned kitchen stance.",
         ),
     )
+    posture_gates, collision_proxies = prepare_navigation_posture(
+        recorder,
+        robot,
+        ik,
+    )
+    gates.extend(posture_gates)
+    if not posture_gates or not all(
+        bool(gate.get("passed", False)) for gate in posture_gates
+    ):
+        return fail_closed_result(
+            gate_name=requested_gate_name,
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Compact navigation posture or posture-specific collider "
+                "coverage failed before route validation or any base command."
+            ),
+        )
+    preflight = validate_navigation_route(
+        robot,
+        collision_proxies,
+        (route_target for _phase, route_target, _intent in route_waypoints),
+        target_yaw=nominal_yaw,
+        phase="cup_route_full_robot_preflight",
+    )
+    gates.append(preflight)
+    if not preflight["passed"]:
+        return fail_closed_result(
+            gate_name=requested_gate_name,
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Full-robot route preflight failed before any base command."
+            ),
+        )
+    if not execute:
+        after = task_object_snapshot(
+            recorder.stage, recorder.object_paths
+        )
+        return {
+            "gate": "cup_navigation_posture_and_route_preflight",
+            "classification": (
+                "participant_navigation_posture_and_route_preflight"
+            ),
+            "passed": True,
+            "gates": gates,
+            "task_objects_before": before,
+            "task_objects_after": after,
+            "motion_scope": (
+                "arm articulation moved to the compact navigation posture; "
+                "no base, gripper, or task-object command was issued"
+            ),
+            "official_stage_complete": False,
+            "official_score": None,
+        }
     for route_phase, route_target, route_intent in route_waypoints:
         gate = drive_base_to(
             recorder,
@@ -1947,6 +2851,52 @@ def run_tray_gate(
         ),
         ("tray_base_staging", staging_xy),
     )
+    posture_gates, collision_proxies = prepare_navigation_posture(
+        recorder,
+        robot,
+        ik,
+    )
+    gates.extend(posture_gates)
+    if not posture_gates or not all(
+        bool(gate.get("passed", False)) for gate in posture_gates
+    ):
+        return fail_closed_result(
+            gate_name=(
+                "tray_bimanual_lift_and_transport"
+                if transport
+                else "tray_bimanual_lift"
+            ),
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Compact navigation posture or posture-specific collider "
+                "coverage failed before route validation or any base command."
+            ),
+        )
+    preflight = validate_navigation_route(
+        robot,
+        collision_proxies,
+        (route_target for _phase, route_target in route_waypoints),
+        target_yaw=nominal_yaw,
+        phase="tray_route_full_robot_preflight",
+    )
+    gates.append(preflight)
+    if not preflight["passed"]:
+        return fail_closed_result(
+            gate_name=(
+                "tray_bimanual_lift_and_transport"
+                if transport
+                else "tray_bimanual_lift"
+            ),
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Full-robot tray approach preflight failed before any base "
+                "command."
+            ),
+        )
     for route_phase, route_target in route_waypoints:
         gate = drive_base_to(
             recorder,
@@ -2355,6 +3305,11 @@ def validate_arguments() -> None:
             100.0,
         ),
         "--arm-effort-abort": (ARGS.arm_effort_abort, 20.0, 250.0),
+        "--arm-max-target-step-rad": (
+            ARGS.arm_max_target_step_rad,
+            0.001,
+            0.20,
+        ),
         "--base-stall-seconds": (ARGS.base_stall_seconds, 0.25, 3.0),
         "--base-stall-grace-seconds": (
             ARGS.base_stall_grace_seconds,
@@ -2365,6 +3320,51 @@ def validate_arguments() -> None:
             ARGS.base_stall_distance,
             0.002,
             0.05,
+        ),
+        "--base-steering-timeout-seconds": (
+            ARGS.base_steering_timeout_seconds,
+            0.5,
+            10.0,
+        ),
+        "--base-drive-response-rad-s": (
+            ARGS.base_drive_response_rad_s,
+            0.01,
+            5.0,
+        ),
+        "--route-clearance-margin": (
+            ARGS.route_clearance_margin,
+            0.01,
+            0.20,
+        ),
+        "--route-max-translation-step": (
+            ARGS.route_max_translation_step,
+            0.005,
+            0.05,
+        ),
+        "--route-max-yaw-step-deg": (
+            ARGS.route_max_yaw_step_deg,
+            0.5,
+            5.0,
+        ),
+        "--route-cross-track-tolerance": (
+            ARGS.route_cross_track_tolerance,
+            0.04,
+            0.25,
+        ),
+        "--navigation-stow-height": (
+            ARGS.navigation_stow_height,
+            1.0,
+            1.4,
+        ),
+        "--navigation-stow-forward": (
+            ARGS.navigation_stow_forward,
+            0.35,
+            0.65,
+        ),
+        "--navigation-stow-lateral": (
+            ARGS.navigation_stow_lateral,
+            0.20,
+            0.38,
         ),
         "--cup-pregrasp-clearance": (
             ARGS.cup_pregrasp_clearance,
@@ -2495,6 +3495,8 @@ def write_evidence(
     physical_results: list[dict[str, Any]],
     rigid_bodies: dict[str, Any],
     environment_inventory: list[dict[str, Any]],
+    collision_inventory: dict[str, Any],
+    collision_proxy_inventory: dict[str, Any],
     started_wall: float,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -2543,6 +3545,8 @@ def write_evidence(
         "mutation_guard": mutation_guard,
         "rigid_body_state_before_motion": rigid_bodies,
         "environment_top_level_inventory": environment_inventory,
+        "collision_prim_inventory": collision_inventory,
+        "collision_proxy_inventory": collision_proxy_inventory,
         "all_task_objects_dynamic": all(
             record["all_enabled"] and record["all_dynamic"]
             for record in rigid_bodies.values()
@@ -2706,6 +3710,28 @@ def main() -> bool:
         for name, path in object_paths.items()
     }
     environment_inventory = environment_top_level_inventory(stage)
+    collision_inventory = collision_prim_inventory(stage)
+    base_pose_for_proxies, _ = world_pose(robot)
+    try:
+        collision_proxies = extract_collision_proxy_set(
+            stage,
+            robot_path=ROBOT_PRIM_PATH,
+            base_frame_path=root_path,
+            base_world_z=float(base_pose_for_proxies[2]),
+        )
+    except Exception as error:  # noqa: BLE001
+        collision_proxies = CollisionProxySet(
+            robot=(),
+            environment=(),
+            support_surface_paths=(),
+            candidate_robot_paths=(),
+            candidate_environment_paths=(),
+            unresolved_paths=(
+                f"extractor [{type(error).__name__}: {error}]",
+            ),
+            traversal_backend="failed",
+        )
+    collision_proxy_inventory = collision_proxies.record()
     recorder = TraceRecorder(
         world=world,
         robot=robot,
@@ -2740,7 +3766,7 @@ def main() -> bool:
             }
         )
     cup_result: dict[str, Any] | None = None
-    if ARGS.gate in ("cup", "all"):
+    if ARGS.gate in ("cup-preflight", "cup", "all"):
         cup_result = run_cup_gate(
             recorder,
             robot,
@@ -2748,6 +3774,7 @@ def main() -> bool:
             steering_ids,
             drive_ids,
             drivers,
+            execute=ARGS.gate != "cup-preflight",
         )
         results.append(cup_result)
     if ARGS.gate in ("tray-lift", "tray-transport", "all"):
@@ -2798,6 +3825,8 @@ def main() -> bool:
         physical_results=results,
         rigid_bodies=rigid_bodies,
         environment_inventory=environment_inventory,
+        collision_inventory=collision_inventory,
+        collision_proxy_inventory=collision_proxy_inventory,
         started_wall=started_wall,
     )
     print(

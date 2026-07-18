@@ -1,0 +1,433 @@
+{
+  "benchmark_score": null,
+  "classification": "measured_physical_development_evidence",
+  "coordinate_frame": "official_isaac_world_metres_z_up",
+  "events": [
+    {
+      "intent": "Record settled official public Task 3 scene state.",
+      "intent_is_measured_outcome": false,
+      "phase": "initial_state",
+      "simulation_step": 0,
+      "time_seconds": 0.0
+    },
+    {
+      "intent": "Raise both empty grippers vertically before retracting them into the mobile-base navigation envelope.",
+      "intent_is_measured_outcome": false,
+      "phase": "navigation_stow_lift",
+      "simulation_step": 0,
+      "time_seconds": 0.0
+    },
+    {
+      "intent": "Record final measured articulation and task-object state.",
+      "intent_is_measured_outcome": false,
+      "phase": "final_state",
+      "simulation_step": 7,
+      "time_seconds": 0.029167
+    }
+  ],
+  "frames": [
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706602,
+          -0.0,
+          1e-06,
+          0.707611
+        ],
+        "position": [
+          -4.600225,
+          2.712454,
+          0.00441
+        ]
+      },
+      "base_control": null,
+      "gripper_driver_efforts": {
+        "left": -0.031755,
+        "right": 0.007353
+      },
+      "gripper_driver_positions": {
+        "left": 0.000268,
+        "right": 0.000259
+      },
+      "phase": "initial_state",
+      "simulation_step": 0,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29074,
+            -0.439814,
+            0.784474,
+            0.32655
+          ],
+          "position": [
+            -4.322839,
+            1.878005,
+            0.856878
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325086,
+            0.784334,
+            -0.44122,
+            0.290626
+          ],
+          "position": [
+            -4.88003,
+            1.878734,
+            0.856592
+          ]
+        }
+      },
+      "time_seconds": 0.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706602,
+          -0.0,
+          1e-06,
+          0.707611
+        ],
+        "position": [
+          -4.600225,
+          2.712454,
+          0.00441
+        ]
+      },
+      "base_control": null,
+      "gripper_driver_efforts": {
+        "left": -0.031755,
+        "right": 0.007353
+      },
+      "gripper_driver_positions": {
+        "left": 0.000268,
+        "right": 0.000259
+      },
+      "phase": "navigation_stow_lift",
+      "simulation_step": 0,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29074,
+            -0.439814,
+            0.784474,
+            0.32655
+          ],
+          "position": [
+            -4.322839,
+            1.878005,
+            0.856878
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325086,
+            0.784334,
+            -0.44122,
+            0.290626
+          ],
+          "position": [
+            -4.88003,
+            1.878734,
+            0.856592
+          ]
+        }
+      },
+      "time_seconds": 0.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706603,
+          0.0,
+          -0.0,
+          0.70761
+        ],
+        "position": [
+          -4.600227,
+          2.712851,
+          0.004409
+        ]
+      },
+      "base_control": null,
+      "gripper_driver_efforts": {
+        "left": -0.039392,
+        "right": 0.010269
+      },
+      "gripper_driver_positions": {
+        "left": 0.000272,
+        "right": 0.000204
+      },
+      "phase": "final_state",
+      "simulation_step": 7,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290046,
+            -0.439904,
+            0.78446,
+            0.327078
+          ],
+          "position": [
+            -4.322692,
+            1.878457,
+            0.857846
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325249,
+            0.7845,
+            -0.441392,
+            0.289734
+          ],
+          "position": [
+            -4.880192,
+            1.879163,
+            0.857469
+          ]
+        }
+      },
+      "time_seconds": 0.029167
+    }
+  ],
+  "kind": "airsign_ebim_track3_stage1_physical_gate_trace",
+  "official_score_claimed": false,
+  "official_stage_completion_claimed": false,
+  "provenance": {
+    "configured_robot_start": {
+      "position": [
+        -4.6,
+        2.7,
+        0.0
+      ],
+      "yaw_degrees": -90.0
+    },
+    "container_image": "unavailable",
+    "container_image_id": "unavailable",
+    "controller_path_in_runtime": "/workspace/EBiM_Challenge/ebim-track3-solution/stage1_table_setup.py",
+    "controller_sha256": "778a387def82449cba9f67504b9afb7825c70249960e6d74e14fe4d944644239",
+    "head_placement": "A",
+    "official_benchmark_commit": "cb5184574f33611f943ff42aae461678ccb538e9",
+    "physics_hz": 240.0,
+    "python": "3.11.13",
+    "requested_robot_pose_overrides": {
+      "x": null,
+      "y": null,
+      "yaw_degrees": null,
+      "z": null
+    },
+    "robot_asset": "/workspace/EBiM_Challenge/task1_isaacsim/assets/Robotiq_2f_85_with_d405_mobile_fr3_duo_v0_2.usd",
+    "robot_asset_sha256": "aa1a833de48cc543c73957461dab82fe0979320b7c0b6a0a113d24b500075e5c",
+    "room_asset": "/workspace/EBiM_Challenge/assets/robot_room.usd",
+    "room_asset_sha256": "696c71577f1874d815fe29c6a58c65f0f1a0a0fb15c0d8adbb5105209f5ff883",
+    "simulator": "Isaac Sim 5.1.0",
+    "trace_hz": 10
+  },
+  "robot_links_teleported": false,
+  "schema_version": 1,
+  "task_object_mutation_api_used": false,
+  "task_objects_teleported": false
+}
