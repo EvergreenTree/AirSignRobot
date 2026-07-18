@@ -10,9 +10,10 @@ yaw interpolation, then performs conservative 2.5-D separating-axis tests.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from typing import Any, Iterable, Sequence
 
 
@@ -73,6 +74,8 @@ class RouteValidationConfig:
     max_translation_step: float = 0.025
     max_yaw_step_rad: float = math.radians(2.0)
     clearance_margin: float = 0.08
+    execution_translation_tolerance: float = 0.04
+    execution_yaw_tolerance_rad: float = math.radians(2.0)
     base_z: float = 0.0
     collision_coverage_complete: bool = True
 
@@ -84,6 +87,11 @@ class RouteValidationConfig:
             and self.max_yaw_step_rad > 0.0
             and _finite(self.clearance_margin)
             and self.clearance_margin >= 0.0
+            and _finite(self.execution_translation_tolerance)
+            and self.execution_translation_tolerance >= 0.0
+            and _finite(self.execution_yaw_tolerance_rad)
+            and self.execution_yaw_tolerance_rad >= 0.0
+            and self.execution_yaw_tolerance_rad <= math.pi
             and _finite(self.base_z)
         ):
             raise ValueError("route validation limits must be finite")
@@ -186,7 +194,7 @@ def sample_route(
             }
         ]
 
-    samples: list[dict[str, Any]] = []
+    segment_specs: list[dict[str, Any]] = []
     for segment_index, (start, end) in enumerate(
         zip(waypoints, waypoints[1:])
     ):
@@ -199,9 +207,45 @@ def sample_route(
         )
         actual_ds = distance / count
         actual_dyaw = abs(yaw_delta) / count
+        segment_specs.append(
+            {
+                "segment_index": segment_index,
+                "start": start,
+                "end": end,
+                "yaw_delta": yaw_delta,
+                "count": count,
+                "translation_step": actual_ds,
+                "yaw_step_rad": actual_dyaw,
+            }
+        )
+
+    samples: list[dict[str, Any]] = []
+    for spec in segment_specs:
+        segment_index = int(spec["segment_index"])
+        start = spec["start"]
+        end = spec["end"]
+        yaw_delta = float(spec["yaw_delta"])
+        count = int(spec["count"])
+        actual_ds = float(spec["translation_step"])
+        actual_dyaw = float(spec["yaw_step_rad"])
         start_index = 0 if segment_index == 0 else 1
         for index in range(start_index, count + 1):
             fraction = index / count
+            sample_ds = actual_ds
+            sample_dyaw = actual_dyaw
+            if (
+                index == count
+                and segment_index + 1 < len(segment_specs)
+            ):
+                next_spec = segment_specs[segment_index + 1]
+                sample_ds = max(
+                    sample_ds,
+                    float(next_spec["translation_step"]),
+                )
+                sample_dyaw = max(
+                    sample_dyaw,
+                    float(next_spec["yaw_step_rad"]),
+                )
             samples.append(
                 {
                     "pose": Pose2(
@@ -211,8 +255,8 @@ def sample_route(
                     ),
                     "segment_index": segment_index,
                     "fraction": fraction,
-                    "translation_step": actual_ds,
-                    "yaw_step_rad": actual_dyaw,
+                    "translation_step": sample_ds,
+                    "yaw_step_rad": sample_dyaw,
                 }
             )
     return samples
@@ -234,10 +278,13 @@ def validate_route(
             raise ValueError("environment collision proxy set is empty")
         for proxy in (*robot_proxies, *obstacle_proxies):
             proxy.validate()
+        _require_unique_source_paths(robot_proxies, label="robot")
+        _require_unique_source_paths(obstacle_proxies, label="environment")
         samples = sample_route(waypoints, config)
     except Exception as error:  # noqa: BLE001 - fail-closed certificate
         return _certificate(
             {
+                "certificate_schema_version": 2,
                 "passed": False,
                 "failure": "invalid_or_incomplete_geometry",
                 "reason": f"{type(error).__name__}: {error}",
@@ -249,15 +296,50 @@ def validate_route(
             }
         )
 
-    ordered_robot = sorted(robot_proxies, key=lambda item: item.source_path)
+    ordered_robot = sorted(
+        robot_proxies, key=lambda item: _canonical_json(_proxy_record(item))
+    )
     ordered_obstacles = sorted(
-        obstacle_proxies, key=lambda item: item.source_path
+        obstacle_proxies,
+        key=lambda item: _canonical_json(_proxy_record(item)),
+    )
+    validated_inputs = _validated_input_record(
+        ordered_robot,
+        ordered_obstacles,
+        waypoints,
     )
     maximum_radius = max(
         math.hypot(point[0], point[1])
         for proxy in ordered_robot
         for point in proxy.vertices_xy
     )
+    maximum_spatial_radius = max(
+        math.sqrt(
+            point[0] * point[0]
+            + point[1] * point[1]
+            + max(abs(proxy.z_min), abs(proxy.z_max)) ** 2
+        )
+        for proxy in ordered_robot
+        for point in proxy.vertices_xy
+    )
+    execution_yaw_allowance = (
+        2.0
+        * maximum_radius
+        * math.sin(0.5 * config.execution_yaw_tolerance_rad)
+    )
+    execution_envelope = {
+        "translation_tolerance_metres": (
+            config.execution_translation_tolerance
+        ),
+        "yaw_tolerance_rad": config.execution_yaw_tolerance_rad,
+        "maximum_robot_planar_radius_metres": maximum_radius,
+        "maximum_robot_spatial_radius_metres": maximum_spatial_radius,
+        "yaw_arc_allowance_metres": execution_yaw_allowance,
+        "total_planar_allowance_metres": (
+            config.execution_translation_tolerance
+            + execution_yaw_allowance
+        ),
+    }
     checked_pairs = 0
     for sample_index, sample in enumerate(samples):
         translation_allowance = 0.5 * float(
@@ -268,6 +350,8 @@ def validate_route(
         )
         effective_margin = (
             config.clearance_margin
+            + config.execution_translation_tolerance
+            + execution_yaw_allowance
             + translation_allowance
             + yaw_allowance
         )
@@ -284,6 +368,7 @@ def validate_route(
                 ):
                     return _certificate(
                         {
+                            "certificate_schema_version": 2,
                             "passed": False,
                             "failure": "preflight_overlap",
                             "reason": (
@@ -312,12 +397,15 @@ def validate_route(
                             "obstacle_proxy_count": len(
                                 ordered_obstacles
                             ),
+                            "execution_envelope": execution_envelope,
+                            "validated_inputs": validated_inputs,
                             "config": asdict(config),
                         }
                     )
 
     return _certificate(
         {
+            "certificate_schema_version": 2,
             "passed": True,
             "failure": None,
             "reason": None,
@@ -333,6 +421,8 @@ def validate_route(
             "obstacle_source_paths": [
                 proxy.source_path for proxy in ordered_obstacles
             ],
+            "execution_envelope": execution_envelope,
+            "validated_inputs": validated_inputs,
             "config": asdict(config),
         }
     )
@@ -379,11 +469,454 @@ def distance_to_polyline(
     return min(distances)
 
 
+def route_pose_deviation(
+    pose: Pose2,
+    waypoints: Sequence[Pose2],
+) -> dict[str, float | int]:
+    """Measure translation and yaw deviation from the nearest route pose."""
+
+    pose.validate()
+    if not waypoints:
+        raise ValueError("at least one waypoint is required")
+    for waypoint in waypoints:
+        waypoint.validate()
+    if len(waypoints) == 1:
+        return {
+            "segment_index": 0,
+            "fraction": 0.0,
+            "cross_track_metres": math.hypot(
+                pose.x - waypoints[0].x,
+                pose.y - waypoints[0].y,
+            ),
+            "expected_yaw_rad": waypoints[0].yaw,
+            "yaw_error_rad": abs(
+                wrap_to_pi(pose.yaw - waypoints[0].yaw)
+            ),
+        }
+
+    candidates: list[dict[str, float | int]] = []
+    for segment_index, (start, end) in enumerate(
+        zip(waypoints, waypoints[1:])
+    ):
+        dx = end.x - start.x
+        dy = end.y - start.y
+        denominator = dx * dx + dy * dy
+        if denominator <= 1e-18:
+            yaw_delta = wrap_to_pi(end.yaw - start.yaw)
+            fraction = (
+                0.0
+                if abs(yaw_delta) <= 1e-18
+                else min(
+                    1.0,
+                    max(
+                        0.0,
+                        wrap_to_pi(pose.yaw - start.yaw) / yaw_delta,
+                    ),
+                )
+            )
+        else:
+            fraction = min(
+                1.0,
+                max(
+                    0.0,
+                    (
+                        (pose.x - start.x) * dx
+                        + (pose.y - start.y) * dy
+                    )
+                    / denominator,
+                ),
+            )
+        nearest_x = start.x + fraction * dx
+        nearest_y = start.y + fraction * dy
+        yaw_delta = wrap_to_pi(end.yaw - start.yaw)
+        expected_yaw = wrap_to_pi(start.yaw + fraction * yaw_delta)
+        candidates.append(
+            {
+                "segment_index": segment_index,
+                "fraction": fraction,
+                "cross_track_metres": math.hypot(
+                    pose.x - nearest_x,
+                    pose.y - nearest_y,
+                ),
+                "expected_yaw_rad": expected_yaw,
+                "yaw_error_rad": abs(
+                    wrap_to_pi(pose.yaw - expected_yaw)
+                ),
+            }
+        )
+    return min(
+        candidates,
+        key=lambda record: (
+            float(record["cross_track_metres"]),
+            float(record["yaw_error_rad"]),
+            int(record["segment_index"]),
+        ),
+    )
+
+
+def route_execution_tube_record(
+    pose: Pose2,
+    waypoints: Sequence[Pose2],
+    *,
+    translation_tolerance: float,
+    yaw_tolerance_rad: float,
+) -> dict[str, Any]:
+    """Fail closed when a measured pose leaves its certified SE(2) tube."""
+
+    try:
+        translation_limit = float(translation_tolerance)
+        yaw_limit = float(yaw_tolerance_rad)
+        if (
+            not _finite(translation_limit)
+            or translation_limit < 0.0
+            or not _finite(yaw_limit)
+            or yaw_limit < 0.0
+            or yaw_limit > math.pi
+        ):
+            raise ValueError(
+                "execution-tube tolerances must be finite and non-negative"
+            )
+        deviation = route_pose_deviation(pose, waypoints)
+        cross_track = float(deviation["cross_track_metres"])
+        yaw_error = float(deviation["yaw_error_rad"])
+    except Exception as error:  # noqa: BLE001 - pure fail-closed record
+        return {
+            "passed": False,
+            "failure": "invalid_execution_tube",
+            "reason": f"{type(error).__name__}: {error}",
+            "translation_within_tolerance": False,
+            "yaw_within_tolerance": False,
+            "translation_tolerance_metres": translation_tolerance,
+            "yaw_tolerance_rad": yaw_tolerance_rad,
+            "deviation": None,
+        }
+    translation_passed = cross_track <= translation_limit
+    yaw_passed = yaw_error <= yaw_limit
+    failure = None
+    if not translation_passed:
+        failure = "cross_track_violation"
+    elif not yaw_passed:
+        failure = "route_yaw_violation"
+    return {
+        "passed": translation_passed and yaw_passed,
+        "failure": failure,
+        "reason": (
+            None
+            if failure is None
+            else "measured pose left the certified SE(2) execution tube"
+        ),
+        "translation_within_tolerance": translation_passed,
+        "yaw_within_tolerance": yaw_passed,
+        "translation_tolerance_metres": translation_limit,
+        "yaw_tolerance_rad": yaw_limit,
+        "deviation": deviation,
+    }
+
+
+def base_nonplanar_deviation_record(
+    *,
+    position_z: float,
+    orientation_wxyz: Sequence[float],
+    reference_z: float,
+    maximum_robot_radius: float,
+    tolerance: float,
+) -> dict[str, Any]:
+    """Bound base z/tilt motion omitted by an SE(2) route model."""
+
+    try:
+        current_z = float(position_z)
+        captured_z = float(reference_z)
+        radius = float(maximum_robot_radius)
+        limit = float(tolerance)
+        quaternion = tuple(float(value) for value in orientation_wxyz)
+        if len(quaternion) != 4:
+            raise ValueError("base orientation must be a wxyz quaternion")
+        if not all(
+            _finite(value)
+            for value in (
+                current_z,
+                captured_z,
+                radius,
+                limit,
+                *quaternion,
+            )
+        ):
+            raise ValueError("non-planar base inputs must be finite")
+        if radius < 0.0 or limit < 0.0:
+            raise ValueError(
+                "base radius and non-planar tolerance must be non-negative"
+            )
+        norm = math.sqrt(sum(value * value for value in quaternion))
+        if norm <= 1e-12:
+            raise ValueError("base orientation quaternion is zero")
+        _w, x, y, _z = (value / norm for value in quaternion)
+        world_up_alignment = max(
+            -1.0,
+            min(1.0, 1.0 - 2.0 * (x * x + y * y)),
+        )
+        tilt = math.acos(world_up_alignment)
+        z_error = abs(current_z - captured_z)
+        tilt_arc = 2.0 * radius * math.sin(0.5 * tilt)
+        combined_escape = z_error + tilt_arc
+    except Exception as error:  # noqa: BLE001 - pure fail-closed record
+        return {
+            "passed": False,
+            "failure": "invalid_nonplanar_base_pose",
+            "reason": f"{type(error).__name__}: {error}",
+            "z_error_metres": None,
+            "tilt_rad": None,
+            "tilt_arc_metres": None,
+            "combined_escape_metres": None,
+            "tolerance_metres": tolerance,
+        }
+    passed = combined_escape <= limit or math.isclose(
+        combined_escape,
+        limit,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    )
+    return {
+        "passed": passed,
+        "failure": None if passed else "nonplanar_base_envelope_violation",
+        "reason": (
+            None
+            if passed
+            else "base z/tilt motion exceeded the certified 2.5-D allowance"
+        ),
+        "z_error_metres": z_error,
+        "tilt_rad": tilt,
+        "tilt_arc_metres": tilt_arc,
+        "combined_escape_metres": combined_escape,
+        "tolerance_metres": limit,
+    }
+
+
+def route_sha256(waypoints: Sequence[Pose2]) -> str:
+    """Hash the exact ordered finite route coordinates."""
+
+    if not waypoints:
+        raise ValueError("at least one waypoint is required")
+    for waypoint in waypoints:
+        waypoint.validate()
+    return _sha256_json(
+        [_input_pose_record(waypoint) for waypoint in waypoints]
+    )
+
+
+def proxy_geometry_sha256(proxies: Sequence[PrismProxy]) -> str:
+    """Hash a finite proxy set independently of caller ordering."""
+
+    if not proxies:
+        raise ValueError("collision proxy set is empty")
+    for proxy in proxies:
+        proxy.validate()
+    _require_unique_source_paths(proxies, label="collision")
+    records = sorted(
+        (_proxy_record(proxy) for proxy in proxies),
+        key=_canonical_json,
+    )
+    return _sha256_json(records)
+
+
+def route_certificate_is_valid(certificate: dict[str, Any]) -> bool:
+    """Verify a passing certificate and independently replay its inputs.
+
+    A digest alone only detects accidental mutation when an attacker cannot
+    recompute it.  Passing schema-2 certificates therefore retain the exact
+    route and proxy inputs and are reproduced here with the deterministic
+    validator.  Runtime callers must still bind the replayed certificate to
+    the route and live geometry they intend to execute.
+    """
+
+    if not isinstance(certificate, dict):
+        return False
+    supplied = certificate.get("certificate_sha256")
+    if not isinstance(supplied, str) or len(supplied) != 64:
+        return False
+    record = {
+        key: value
+        for key, value in certificate.items()
+        if key != "certificate_sha256"
+    }
+    try:
+        expected = hashlib.sha256(
+            _canonical_json(record).encode("utf-8")
+        ).hexdigest()
+    except (TypeError, ValueError):
+        return False
+    if not hmac.compare_digest(supplied, expected):
+        return False
+    if (
+        certificate.get("certificate_schema_version") != 2
+        or certificate.get("passed") is not True
+    ):
+        return False
+    try:
+        validated_inputs = certificate["validated_inputs"]
+        if not isinstance(validated_inputs, dict):
+            return False
+        route_records = validated_inputs["route_waypoints"]
+        robot_records = validated_inputs["robot_geometry"]
+        obstacle_records = validated_inputs["obstacle_geometry"]
+        if not (
+            isinstance(route_records, list)
+            and isinstance(robot_records, list)
+            and isinstance(obstacle_records, list)
+        ):
+            return False
+        route = tuple(_pose_from_record(value) for value in route_records)
+        robot = tuple(
+            _proxy_from_record(value) for value in robot_records
+        )
+        obstacles = tuple(
+            _proxy_from_record(value) for value in obstacle_records
+        )
+        config_record = certificate["config"]
+        if not isinstance(config_record, dict):
+            return False
+        expected_config_keys = {
+            field.name for field in fields(RouteValidationConfig)
+        }
+        if set(config_record) != expected_config_keys:
+            return False
+        config = RouteValidationConfig(**config_record)
+        replayed = validate_route(robot, obstacles, route, config)
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+    try:
+        return hmac.compare_digest(
+            _canonical_json(certificate),
+            _canonical_json(replayed),
+        )
+    except (TypeError, ValueError):
+        return False
+
+
 def _pose_record(pose: Pose2) -> dict[str, float]:
     return {
         "x": round(pose.x, 9),
         "y": round(pose.y, 9),
         "yaw_rad": round(pose.yaw, 9),
+    }
+
+
+def _input_pose_record(pose: Pose2) -> dict[str, float]:
+    return {
+        "x": float(pose.x),
+        "y": float(pose.y),
+        "yaw_rad": float(pose.yaw),
+    }
+
+
+def _proxy_record(proxy: PrismProxy) -> dict[str, Any]:
+    return {
+        "source_path": proxy.source_path,
+        "vertices_xy": [
+            [float(point[0]), float(point[1])]
+            for point in proxy.vertices_xy
+        ],
+        "z_min": float(proxy.z_min),
+        "z_max": float(proxy.z_max),
+    }
+
+
+def _pose_from_record(value: Any) -> Pose2:
+    if not isinstance(value, dict) or set(value) != {
+        "x",
+        "y",
+        "yaw_rad",
+    }:
+        raise ValueError("route waypoint record has an invalid shape")
+    pose = Pose2(
+        float(value["x"]),
+        float(value["y"]),
+        float(value["yaw_rad"]),
+    )
+    pose.validate()
+    return pose
+
+
+def _proxy_from_record(value: Any) -> PrismProxy:
+    if not isinstance(value, dict) or set(value) != {
+        "source_path",
+        "vertices_xy",
+        "z_min",
+        "z_max",
+    }:
+        raise ValueError("collision proxy record has an invalid shape")
+    source_path = value["source_path"]
+    vertices = value["vertices_xy"]
+    if (
+        not isinstance(source_path, str)
+        or not isinstance(vertices, list)
+        or any(
+            not isinstance(point, list) or len(point) != 2
+            for point in vertices
+        )
+    ):
+        raise ValueError("collision proxy record contains invalid values")
+    proxy = PrismProxy(
+        vertices_xy=tuple(
+            (float(point[0]), float(point[1])) for point in vertices
+        ),
+        z_min=float(value["z_min"]),
+        z_max=float(value["z_max"]),
+        source_path=source_path,
+    )
+    proxy.validate()
+    return proxy
+
+
+def _require_unique_source_paths(
+    proxies: Sequence[PrismProxy],
+    *,
+    label: str,
+) -> None:
+    paths = [proxy.source_path for proxy in proxies]
+    if len(paths) != len(set(paths)):
+        raise ValueError(f"{label} proxy source paths must be unique")
+
+
+def _sha256_json(value: Any) -> str:
+    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def _validated_input_record(
+    robot_proxies: Sequence[PrismProxy],
+    obstacle_proxies: Sequence[PrismProxy],
+    waypoints: Sequence[Pose2],
+) -> dict[str, Any]:
+    route = [_input_pose_record(pose) for pose in waypoints]
+    robot_geometry = [_proxy_record(proxy) for proxy in robot_proxies]
+    obstacle_geometry = [_proxy_record(proxy) for proxy in obstacle_proxies]
+    digests = {
+        "route_sha256": route_sha256(waypoints),
+        "robot_geometry_sha256": _sha256_json(robot_geometry),
+        "obstacle_geometry_sha256": _sha256_json(obstacle_geometry),
+    }
+    return {
+        **digests,
+        "route_waypoints": route,
+        "robot_geometry": robot_geometry,
+        "obstacle_geometry": obstacle_geometry,
+        "robot_proxy_count": len(robot_geometry),
+        "obstacle_proxy_count": len(obstacle_geometry),
+        "certificate_inputs_sha256": _sha256_json(
+            {
+                "route": route,
+                "robot_geometry": robot_geometry,
+                "obstacle_geometry": obstacle_geometry,
+            }
+        ),
     }
 
 
@@ -429,9 +962,7 @@ def _polygons_overlap_with_margin(
 
 
 def _certificate(record: dict[str, Any]) -> dict[str, Any]:
-    canonical = json.dumps(
-        record, sort_keys=True, separators=(",", ":"), allow_nan=False
-    )
+    canonical = _canonical_json(record)
     return {
         **record,
         "certificate_sha256": hashlib.sha256(

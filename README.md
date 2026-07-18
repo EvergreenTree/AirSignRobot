@@ -43,11 +43,17 @@ credential is needed:
 python3 scripts/validate_submission.py
 ```
 
-Expected final record:
+The submission-ready final record is:
 
 ```text
 AIRSIGN_SUBMISSION_CHECK {"checks_passed": 10, "failures": [], "passed": true}
 ```
+
+Until a fresh schema-2 GPU diagnostic has been captured and reviewed, the
+validator intentionally exits nonzero with
+`No passing schema-2 Stage 1 cup-preflight binds all executed sources and the
+immutable container image`. Do not suppress that failure or relabel an older,
+failed, or less-complete diagnostic.
 
 This verifies controller syntax, the canonical replay schema and hashes,
 evidence claim boundaries, Stage 1 diagnostic manifests and detached exits,
@@ -105,12 +111,20 @@ Docker build argument.
 From the repository root:
 
 ```bash
-docker build --pull --tag airsignrobot:task3 .
+git status --short  # keep the context clean if the label must be exact
+docker build --pull \
+  --build-arg AIRSIGN_REVISION="$(git rev-parse HEAD)" \
+  --tag airsignrobot:task3 \
+  .
 ```
 
-The first build downloads the Isaac Sim base image, pinned benchmark and Task 3
-room, and pinned Robotiq asset. It is intentionally large. No cloud
-credentials, datasets, or model weights are required.
+The caller-supplied source-revision argument binds the OCI image revision and
+its in-container provenance stamp. A generic Docker build does not itself
+enforce a clean context; only `scripts/capture_stage1.sh` makes that exact-commit
+claim and refuses local changes. The first build downloads the Isaac Sim base
+image, pinned benchmark and Task 3 room, and pinned Robotiq asset. It is
+intentionally large. No cloud credentials, datasets, or model weights are
+required.
 
 ## Smoke test (no GPU required)
 
@@ -180,9 +194,42 @@ commands an open → closed → open sequence only through articulation actions,
 and reads the task-object and logical-region inventory without mutating it.
 Success ends with `GRIPPER_SCENE_GATE2_RESULT` containing `"passed": true`.
 
-### Physical Stage 1 development gate
+### Retained physical Stage 1 diagnostic capture
 
-Run the fail-closed, articulation-only Table Setup development controller:
+Use the repository capture wrapper for any Stage 1 run that will be retained as
+judge-facing evidence. It refuses a dirty worktree and an existing output path,
+builds with the full source commit, records the Docker image inspection, runs
+smoke and the GPU workload by immutable image ID, and preserves complete logs:
+
+```bash
+git status --short  # must print nothing
+AIRSIGN_STAGE1_GATE=cup-preflight ./scripts/capture_stage1.sh
+```
+
+The default output is
+`evidence/stage1-physical-development/<gate>-<revision>/`. Each new bundle
+contains the controller's `manifest.json`, a host-side `capture.json` hashing
+all retained run artifacts, the Docker `image-inspect.json`, smoke and
+controller logs, `container.exit`, a bundle `README.md`, and an
+`INDEX_ENTRY.md` bullet. Review that bullet and add it to
+[`evidence/stage1-physical-development/README.md`](evidence/stage1-physical-development/README.md),
+then run `python3 scripts/validate_submission.py`.
+
+Commit a retained bundle in a separate descendant commit. Do not amend,
+rebase, squash, or cherry-pick away the captured source commit: validation
+requires that exact image/source revision to remain an ancestor of the
+submitted revision.
+
+The wrapper returns the controller's status after packaging. A failed
+fail-closed diagnostic therefore returns nonzero while still preserving a
+complete, explicitly non-official bundle. Missing controller artifacts,
+inconsistent provenance, malformed or non-finite JSON, image/revision mismatch,
+or failed packaging prevents publication of the staging directory.
+
+### Development-only Stage 1 run
+
+For local iteration where no evidence bundle will be retained, run the
+fail-closed, articulation-only Table Setup controller manually:
 
 ```bash
 mkdir -p stage1-output
@@ -199,15 +246,34 @@ docker run --rm \
   --head-placement A
 ```
 
+This manual command does **not** retain the image inspection and smoke binding
+required for a schema-2 judge-evidence bundle. Do not copy its output into
+`evidence/`; rerun the exact committed revision through
+`scripts/capture_stage1.sh` when the result is ready to retain.
+
 Available gates are `inspect`, `cup-preflight`, `cup`, `tray-lift`,
-`tray-transport`, and `all`. The `cup-preflight` gate moves the arms into a
-compact navigation posture and validates the full robot footprint over the
-planned route, but it issues no base, gripper, or task-object command. The
-controller constructs the pinned official scene, commands only robot
-articulation degrees of freedom, records task-object poses read-only, and exits
-nonzero when a posture, route, navigation, IK, joint-effort, or
-physical-outcome gate fails. It writes `trajectory.json`, `metrics.json`, and
-`manifest.json` with controller, scene, and image provenance.
+`tray-transport`, and `all`. The `cup-preflight` gate is read-only after normal
+Isaac asset initialization: it captures the robot's current full collision
+geometry and validates that footprint over the planned route, without issuing a
+base, arm, gripper, or task-object command. The controller avoids the official
+ready-pose helper because that helper initializes joints with
+`set_joint_positions`; motion gates instead use guarded articulation targets
+after evidence recording begins. The controller constructs the pinned official
+scene, records task-object poses read-only, and exits nonzero when a posture,
+route, navigation, IK, joint-effort, or physical-outcome gate fails. It writes
+`trajectory.json`, `metrics.json`, and `manifest.json` with controller, scene,
+and image provenance.
+
+Nonzero base motion is currently disabled fail-closed. The controller does not
+yet have an Isaac-measured, conservative swept stopping bound that accounts for
+robot, payload, and environment motion and is cryptographically bound to each
+route certificate. Fixed gaps between operational and certificate envelopes are
+diagnostic containment margins, not a braking proof. Consequently,
+`cup-preflight` is the only current evidence-capture gate intended to run to
+completion; motion gates must report
+`base_motion_stopping_envelope_uncertified` before issuing a nonzero wheel
+command. This limitation must be closed and GPU-validated before claiming a
+full Stage 1 attempt.
 
 The tray gates are payload-stability experiments only. The tray is not one of
 the four scored Stage 1 objects and a tray-gate pass is not a rulebook
@@ -219,10 +285,17 @@ contract, so even a passing grasp, lift, release, or transport gate keeps
 `official_stage_complete: false` and `official_stage_score: null`.
 The retained exact-entrypoint diagnostics are indexed under
 [`evidence/stage1-physical-development/`](evidence/stage1-physical-development/);
-all fail before manipulation and are labeled non-canonical. The latest
-no-base-motion diagnostic also records prismatic spine force separately from
-revolute-arm effort and stops before a joint target exceeds its participant
-continuity limit.
+all currently retained runs predate the schema-2 controller and are labeled
+non-canonical. The current controller resolves the unique enabled dynamic body
+below each task-object asset, replay-verifies route and proxy inputs, and binds
+every enabled collider to exact local-geometry witnesses. Before, after, and
+during zero-command settling for every base physics step, it recaptures full
+robot/payload transforms and fails closed outside smaller operational
+SE(2), non-planar-base, or collider envelopes. A wider certificate allowance
+provides a diagnostic containment gap only; it is not presented as a reaction
+or stopping guarantee. None of those safeguards is presented as empirically
+validated until a fresh clean-revision schema-2 GPU bundle passes the repository
+validator.
 
 ### Four-stage browser replay
 

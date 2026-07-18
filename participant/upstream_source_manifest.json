@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/EBiM-Benchmark/benchmark",
+  "revision": "cb5184574f33611f943ff42aae461678ccb538e9",
+  "helpers": {
+    "dual_arm_lula": {
+      "repository_path": "task3_isaacsim/scripts/common/dual_arm_lula.py",
+      "bytes": 20656,
+      "sha256": "2c6e8e3fcf0c3e297b641adfcde6605f2c5a953b5e5bcb0404699e1291922fd7"
+    },
+    "gripper_profiles": {
+      "repository_path": "task3_isaacsim/scripts/gripper_profiles.py",
+      "bytes": 2322,
+      "sha256": "258162177bf1b34b9e0a1d8f9a800c2bd8f9e0610891b7b0e8558556886a895c"
+    },
+    "isaacsim_fr3duo_teleop_bridge_args": {
+      "repository_path": "task2_isaacsim/scripts/isaacsim_fr3duo_teleop_bridge_args.py",
+      "bytes": 4905,
+      "sha256": "b5c99a971f801597ec0ef50baa7854d4a61ea97fc326f67bf6e5a5e5e1aeffa2"
+    },
+    "isaacsim_fr3duo_teleop_bridge_core": {
+      "repository_path": "task2_isaacsim/scripts/isaacsim_fr3duo_teleop_bridge_core.py",
+      "bytes": 54182,
+      "sha256": "1b3eaede3b0594d45aba54d20d0efefda81620fa63ef4b1e34cb5b70ab621559"
+    },
+    "scene_robot_room_keyboard": {
+      "repository_path": "scripts/scenes/scene_robot_room_keyboard.py",
+      "bytes": 62493,
+      "sha256": "98dc14fc23c4d40f0ae269f2cdb453be7b0cdf0cdb15b0b35d0e03fb52d0d3a0"
+    }
+  }
+}

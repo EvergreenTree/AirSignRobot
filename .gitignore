@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *.log
+!evidence/stage1-physical-development/*/controller.log
+!evidence/stage1-physical-development/*/smoke.log
 .env
 .env.*
 !.env.example

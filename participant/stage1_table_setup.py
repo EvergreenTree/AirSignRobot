@@ -15,8 +15,8 @@ completion or score.
 from __future__ import annotations
 
 import argparse
-import ast
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -52,22 +52,43 @@ from base_motion_monitor import (  # noqa: E402
     BaseMotionMonitor,
     BaseMotionObservation,
 )
+from executable_provenance import (  # noqa: E402
+    executable_source_guard,
+    sha256_file,
+)
 from isaac_collision_geometry import (  # noqa: E402
     CollisionProxySet,
     extract_collision_proxy_set,
+    live_collision_geometry_containment_record,
+    resolve_enabled_dynamic_rigid_body_descendant,
 )
 from joint_command_guard import (  # noqa: E402
     arm_and_spine_effort_record,
-    joint_target_continuity_record,
+    joint_command_slew_record,
+    joint_tracking_error_dwell_record,
 )
 from se2_route_validator import (  # noqa: E402
     Pose2,
     RouteValidationConfig,
-    distance_to_polyline,
+    base_nonplanar_deviation_record,
+    proxy_geometry_sha256,
+    route_certificate_is_valid,
+    route_execution_tube_record,
+    route_sha256,
     validate_route,
 )
 from isaacsim_fr3duo_teleop_bridge_args import (  # noqa: E402
     add_common_bridge_args,
+)
+
+# Nonzero base motion stays fail-closed until an Isaac run establishes a
+# conservative swept stopping envelope and that bound is carried in, and
+# replay-verified from, each route certificate.  Fixed geometric gaps alone are
+# not a braking proof.
+BASE_MOTION_STOPPING_ENVELOPE_CERTIFIED = False
+BASE_MOTION_STOPPING_ENVELOPE_LIMITATION = (
+    "nonzero wheel commands are disabled because no measured, conservative "
+    "swept stopping envelope is bound to the route certificate"
 )
 
 
@@ -131,7 +152,31 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gripper-effort-abort", type=float, default=40.0)
     parser.add_argument("--arm-effort-abort", type=float, default=180.0)
     parser.add_argument(
-        "--arm-max-target-step-rad", type=float, default=0.025
+        "--arm-max-command-slew-rad",
+        type=float,
+        default=0.025,
+        help=(
+            "Maximum absolute change between adjacent applied arm commands. "
+            "A violation aborts before application; targets are not clamped."
+        ),
+    )
+    parser.add_argument(
+        "--arm-tracking-error-threshold-rad",
+        type=float,
+        default=0.12,
+        help=(
+            "Independent maximum target-to-measured arm error before the "
+            "tracking dwell begins."
+        ),
+    )
+    parser.add_argument(
+        "--arm-tracking-error-dwell-seconds",
+        type=float,
+        default=0.25,
+        help=(
+            "Continuous time above the tracking-error threshold required "
+            "for a fail-closed abort."
+        ),
     )
     parser.add_argument("--base-stall-seconds", type=float, default=1.0)
     parser.add_argument("--base-stall-grace-seconds", type=float, default=1.0)
@@ -152,7 +197,46 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--route-max-yaw-step-deg", type=float, default=2.0
     )
     parser.add_argument(
-        "--route-cross-track-tolerance", type=float, default=0.12
+        "--route-cross-track-tolerance", type=float, default=0.04
+    )
+    parser.add_argument(
+        "--route-operational-cross-track-tolerance",
+        type=float,
+        default=0.02,
+        help=(
+            "Smaller runtime cross-track limit. The gap to the certificate "
+            "limit is diagnostic containment margin, not a braking proof."
+        ),
+    )
+    parser.add_argument(
+        "--route-yaw-tracking-tolerance-deg", type=float, default=2.0
+    )
+    parser.add_argument(
+        "--route-operational-yaw-tolerance-deg",
+        type=float,
+        default=1.0,
+        help=(
+            "Smaller runtime yaw limit. The gap to the certificate limit is "
+            "diagnostic containment margin, not a braking proof."
+        ),
+    )
+    parser.add_argument(
+        "--dynamic-geometry-certificate-allowance-metres",
+        type=float,
+        default=0.08,
+        help=(
+            "Clearance reserved in every route certificate for live "
+            "articulation/collider motion relative to the captured base."
+        ),
+    )
+    parser.add_argument(
+        "--dynamic-geometry-operational-limit-metres",
+        type=float,
+        default=0.04,
+        help=(
+            "Smaller live collider-containment limit that triggers a stop "
+            "before the certificate allowance is exhausted."
+        ),
     )
     parser.add_argument(
         "--navigation-stow-height", type=float, default=1.15
@@ -171,12 +255,33 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tray-grasp-z-offset", type=float, default=0.018)
     parser.add_argument("--tray-edge-overhang", type=float, default=0.015)
     parser.add_argument("--tray-lift-height", type=float, default=0.14)
+    parser.add_argument(
+        "--tray-payload-envelope-metres",
+        type=float,
+        default=0.15,
+        help=(
+            "Additional loaded-geometry clearance reserved for measured "
+            "payload-to-base drift after the post-lift collision capture."
+        ),
+    )
+    parser.add_argument(
+        "--tray-payload-operational-limit-metres",
+        type=float,
+        default=0.10,
+        help=(
+            "Live loaded-compound containment limit; the gap to the tray "
+            "payload envelope is diagnostic margin, not a braking proof."
+        ),
+    )
     parser.add_argument("--dining-base-x", type=float, default=-5.05)
     parser.add_argument("--dining-base-y", type=float, default=1.25)
     parser.add_argument(
         "--render",
         action="store_true",
-        help="Render simulator steps. Evidence is captured either way.",
+        help=(
+            "Reserved for future substep-safe rendering; currently rejected "
+            "because one rendered World.step may batch physics substeps."
+        ),
     )
     add_common_bridge_args(parser)
     parser.set_defaults(
@@ -238,6 +343,22 @@ NORTH_TRANSIT_CENTERLINE_CLEARANCE = (
     NORTH_TRANSIT_Y - DINING_TABLE_AABB_Y[1]
 )
 PLANAR_NORM_EPSILON = 1e-9
+AIRSIGN_EXECUTED_SOURCE_NAMES = (
+    "stage1_table_setup.py",
+    "base_motion_monitor.py",
+    "isaac_collision_geometry.py",
+    "joint_command_guard.py",
+    "se2_route_validator.py",
+    "executable_provenance.py",
+)
+AIRSIGN_RUNTIME_DATA_NAMES = ("upstream_source_manifest.json",)
+DIRECT_UPSTREAM_HELPER_MODULES = (
+    "scene_robot_room_keyboard",
+    "gripper_profiles",
+    "isaacsim_fr3duo_teleop_bridge_args",
+    "isaacsim_fr3duo_teleop_bridge_core",
+    "dual_arm_lula",
+)
 
 # These APIs can directly mutate object or link state.  The guard walks the
 # controller's AST before scene construction and fails closed if any call is
@@ -250,6 +371,7 @@ FORBIDDEN_ATTRIBUTE_CALLS = frozenset(
         "set_default_state",
         "set_linear_velocity",
         "set_angular_velocity",
+        "set_joint_positions",
         "set_rigid_bodies_enabled_under",
         "set_rigid_bodies_kinematic_under",
         "translate_prim_preserving_rotation",
@@ -269,14 +391,6 @@ def rounded(values: Iterable[float], digits: int = 6) -> list[float]:
     return [round(float(value), digits) for value in values]
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def git_revision(path: Path) -> str:
     try:
         return subprocess.check_output(
@@ -288,53 +402,175 @@ def git_revision(path: Path) -> str:
         return "unavailable"
 
 
-def enforce_mutation_guard(script_path: Path) -> dict[str, Any]:
-    source = script_path.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(script_path))
-    violations: list[dict[str, Any]] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
+def direct_upstream_helper_records() -> dict[str, dict[str, Any]]:
+    manifest_path = (
+        Path(__file__).resolve().parent / "upstream_source_manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != 1
+        or not isinstance(manifest.get("revision"), str)
+        or not isinstance(manifest.get("helpers"), dict)
+        or set(manifest["helpers"]) != set(DIRECT_UPSTREAM_HELPER_MODULES)
+    ):
+        raise RuntimeError("upstream helper manifest is invalid")
+    runtime_revision = os.environ.get(
+        "EBIM_BENCHMARK_COMMIT",
+        os.environ.get("EBIM_COMMIT", git_revision(REPO_ROOT)),
+    )
+    if runtime_revision != manifest["revision"]:
+        raise RuntimeError(
+            "runtime benchmark revision differs from the authenticated "
+            "upstream helper manifest"
+        )
+    records: dict[str, dict[str, Any]] = {}
+    for module_name in DIRECT_UPSTREAM_HELPER_MODULES:
+        expected = manifest["helpers"][module_name]
+        if not (
+            isinstance(expected, dict)
+            and isinstance(expected.get("repository_path"), str)
+            and isinstance(expected.get("bytes"), int)
+            and not isinstance(expected.get("bytes"), bool)
+            and isinstance(expected.get("sha256"), str)
+        ):
+            raise RuntimeError(
+                f"invalid upstream helper manifest entry: {module_name}"
+            )
+        module = sys.modules.get(module_name)
+        supplied_path = getattr(module, "__file__", None)
+        if not supplied_path:
+            raise RuntimeError(
+                f"direct upstream helper has no source path: {module_name}"
+            )
+        path = Path(supplied_path).resolve()
+        if path.suffix == ".pyc":
+            try:
+                source_candidate = Path(
+                    importlib.util.source_from_cache(str(path))
+                )
+            except (NotImplementedError, ValueError):
+                source_candidate = path.with_suffix(".py")
+            if source_candidate.is_file():
+                path = source_candidate.resolve()
+        if not path.is_file():
+            raise RuntimeError(
+                f"direct upstream helper source is missing: {path}"
+            )
+        try:
+            repository_path = path.relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            repository_path = None
+        observed_sha256 = sha256_file(path)
         if (
-            isinstance(node.func, ast.Attribute)
-            and node.func.attr in FORBIDDEN_ATTRIBUTE_CALLS
+            repository_path != expected["repository_path"]
+            or path.stat().st_size != expected["bytes"]
+            or observed_sha256 != expected["sha256"]
         ):
-            violations.append(
-                {
-                    "line": int(node.lineno),
-                    "call": node.func.attr,
-                    "kind": "forbidden_attribute_call",
-                }
+            raise RuntimeError(
+                "runtime upstream helper differs from the pinned manifest: "
+                f"{module_name}"
             )
-        elif (
-            isinstance(node.func, ast.Name)
-            and node.func.id in FORBIDDEN_DIRECT_CALLS
-        ):
-            violations.append(
-                {
-                    "line": int(node.lineno),
-                    "call": node.func.id,
-                    "kind": "forbidden_dynamic_call",
-                }
+        records[module_name] = {
+            "runtime_path": str(path),
+            "official_repository_path": repository_path,
+            "bytes": path.stat().st_size,
+            "sha256": observed_sha256,
+            "pinned_manifest_revision": manifest["revision"],
+            "pinned_manifest_path": (
+                "participant/upstream_source_manifest.json"
+            ),
+            "matches_pinned_manifest": True,
+        }
+    return records
+
+
+def resolved_airsign_module_records(
+    source_root: Path,
+) -> dict[str, dict[str, Any]]:
+    """Bind imported AirSign modules to the exact guarded source files."""
+
+    records: dict[str, dict[str, Any]] = {}
+    for source_name in AIRSIGN_EXECUTED_SOURCE_NAMES:
+        if source_name == "stage1_table_setup.py":
+            continue
+        module_name = Path(source_name).stem
+        module = sys.modules.get(module_name)
+        if module is None:
+            raise RuntimeError(
+                f"guarded AirSign module is not imported: {module_name}"
             )
-    result = {
-        "passed": not violations,
-        "controller_sha256": sha256_file(script_path),
-        "ast_call_count": sum(
-            isinstance(node, ast.Call) for node in ast.walk(tree)
+        try:
+            supplied_path = module.__file__
+        except AttributeError as error:
+            raise RuntimeError(
+                f"guarded AirSign module has no source path: {module_name}"
+            ) from error
+        if not supplied_path:
+            raise RuntimeError(
+                f"guarded AirSign module has no source path: {module_name}"
+            )
+        runtime_path = Path(supplied_path).resolve()
+        expected_path = (source_root / source_name).resolve()
+        if runtime_path.suffix == ".pyc":
+            try:
+                runtime_path = Path(
+                    importlib.util.source_from_cache(str(runtime_path))
+                ).resolve()
+            except (NotImplementedError, ValueError):
+                runtime_path = runtime_path.with_suffix(".py").resolve()
+        if runtime_path != expected_path or not expected_path.is_file():
+            raise RuntimeError(
+                "guarded AirSign module resolved outside the expected "
+                f"source set: {module_name} -> {runtime_path}"
+            )
+        records[module_name] = {
+            "runtime_path": str(runtime_path),
+            "expected_path": str(expected_path),
+            "repository_path": f"participant/{source_name}",
+            "bytes": expected_path.stat().st_size,
+            "sha256": sha256_file(expected_path),
+            "path_matches_expected": True,
+        }
+    return records
+
+
+def enforce_mutation_guard(script_path: Path) -> dict[str, Any]:
+    source_root = script_path.parent
+    result = executable_source_guard(
+        (
+            source_root / name
+            for name in AIRSIGN_EXECUTED_SOURCE_NAMES
         ),
-        "forbidden_attribute_calls": sorted(FORBIDDEN_ATTRIBUTE_CALLS),
-        "forbidden_direct_calls": sorted(FORBIDDEN_DIRECT_CALLS),
-        "violations": violations,
-        "scope": "participant/stage1_table_setup.py",
-        "scene_initialization_boundary": (
-            "scene_robot_room_keyboard.build_stage before controller motion"
-        ),
-    }
-    if violations:
+        root=source_root,
+        forbidden_attribute_calls=FORBIDDEN_ATTRIBUTE_CALLS,
+        forbidden_direct_calls=FORBIDDEN_DIRECT_CALLS,
+    )
+    result.update(
+        {
+            "controller_sha256": sha256_file(script_path),
+            "scope": [
+                f"participant/{name}"
+                for name in AIRSIGN_EXECUTED_SOURCE_NAMES
+            ],
+            "source_root_in_runtime": str(source_root),
+            "resolved_airsign_modules": (
+                resolved_airsign_module_records(source_root)
+            ),
+            "scene_initialization_boundary": (
+                "scene_robot_room_keyboard.build_stage before controller motion"
+            ),
+            "limitation": (
+                "This is a provenance-bound syntactic policy check, not a "
+                "Python sandbox or a complete proof against reflective or "
+                "native-code mutation."
+            ),
+        }
+    )
+    if result["violations"]:
         raise RuntimeError(
             "Controller mutation guard rejected source: "
-            + json.dumps(violations, sort_keys=True)
+            + json.dumps(result["violations"], sort_keys=True)
         )
     return result
 
@@ -836,6 +1072,9 @@ class TraceRecorder:
         self.events: list[dict[str, Any]] = []
         self.current_phase = "initializing"
         self.base_control: dict[str, Any] | None = None
+        self.arm_last_command_by_name: dict[str, float] | None = None
+        self.arm_tracking_error_consecutive_exceeded_steps = 0
+        self.arm_tracking_last_observation_sim_step: int | None = None
 
     def set_base_control(
         self, diagnostics: dict[str, Any] | None
@@ -1140,6 +1379,8 @@ def move_tcp_pose(
     attempted_settle_steps = 0
     aborted = False
     abort_reason: str | None = None
+    abort_recovery_applied = False
+    abort_recovery_reason = "not_required"
     names = list(robot.dof_names)
     arm_joint_names = tuple(
         name
@@ -1154,10 +1395,66 @@ def move_tcp_pose(
         [names.index(name) for name in arm_joint_names],
         dtype=np.int64,
     )
-    joint_continuity_check_count = 0
-    first_joint_continuity_check: dict[str, Any] | None = None
-    worst_joint_continuity_check: dict[str, Any] | None = None
-    joint_continuity_violation: dict[str, Any] | None = None
+    initial_joint_positions = np.asarray(
+        robot.get_joint_positions(), dtype=np.float64
+    )
+    if recorder.arm_last_command_by_name is None:
+        initial_command_baseline_targets = {
+            name: (
+                float(initial_joint_positions[names.index(name)])
+                if (
+                    initial_joint_positions.ndim == 1
+                    and len(initial_joint_positions) == len(names)
+                )
+                else math.nan
+            )
+            for name in arm_joint_names
+        }
+        initial_command_baseline_source = (
+            "measured_articulation_before_first_arm_command"
+        )
+    else:
+        initial_command_baseline_targets = dict(
+            recorder.arm_last_command_by_name
+        )
+        initial_command_baseline_source = (
+            "previous_applied_arm_command_from_trace_recorder"
+        )
+    previous_command_targets = dict(initial_command_baseline_targets)
+    command_slew_check_count = 0
+    first_command_slew_check: dict[str, Any] | None = None
+    worst_command_slew_check: dict[str, Any] | None = None
+    command_slew_violation: dict[str, Any] | None = None
+    tracking_error_check_count = 0
+    first_tracking_error_check: dict[str, Any] | None = None
+    worst_tracking_error_check: dict[str, Any] | None = None
+    tracking_error_dwell_violation: dict[str, Any] | None = None
+    tracking_error_threshold_exceedance_count = 0
+    tracking_error_observation_gap_reset = bool(
+        recorder.arm_tracking_last_observation_sim_step is not None
+        and recorder.arm_tracking_last_observation_sim_step
+        != recorder.sim_step
+    )
+    if tracking_error_observation_gap_reset:
+        recorder.arm_tracking_error_consecutive_exceeded_steps = 0
+    tracking_error_consecutive_exceeded_steps = (
+        recorder.arm_tracking_error_consecutive_exceeded_steps
+    )
+    initial_tracking_error_consecutive_exceeded_steps = (
+        tracking_error_consecutive_exceeded_steps
+    )
+    max_tracking_error_consecutive_exceeded_steps = (
+        tracking_error_consecutive_exceeded_steps
+    )
+    tracking_error_dwell_steps = max(
+        1,
+        int(
+            math.ceil(
+                ARGS.arm_tracking_error_dwell_seconds
+                * float(ARGS.physics_hz)
+            )
+        ),
+    )
     peak_arm_effort = 0.0
     peak_arm_effort_joint: str | None = None
     peak_arm_effort_by_joint = {
@@ -1170,40 +1467,101 @@ def move_tcp_pose(
     effort_telemetry_nonfinite = False
     initial_effort_record: dict[str, Any] | None = None
 
-    def assess_joint_continuity(
+    def assess_command_slew(
         targets: dict[str, float],
     ) -> dict[str, Any]:
-        nonlocal joint_continuity_check_count
-        nonlocal first_joint_continuity_check
-        nonlocal worst_joint_continuity_check
-        nonlocal joint_continuity_violation
-        record = joint_target_continuity_record(
-            dof_names=names,
-            current_positions=robot.get_joint_positions(),
+        nonlocal command_slew_check_count
+        nonlocal first_command_slew_check
+        nonlocal worst_command_slew_check
+        nonlocal command_slew_violation
+        record = joint_command_slew_record(
+            previous_targets=previous_command_targets,
             targets=targets,
             expected_names=arm_joint_names,
-            max_abs_delta_rad=ARGS.arm_max_target_step_rad,
+            max_abs_delta_rad=ARGS.arm_max_command_slew_rad,
         )
-        joint_continuity_check_count += 1
-        if first_joint_continuity_check is None:
-            first_joint_continuity_check = record
+        command_slew_check_count += 1
+        if first_command_slew_check is None:
+            first_command_slew_check = record
         candidate = record.get("max_abs_delta_rad")
         current_worst = (
             None
-            if worst_joint_continuity_check is None
-            else worst_joint_continuity_check.get("max_abs_delta_rad")
+            if worst_command_slew_check is None
+            else worst_command_slew_check.get("max_abs_delta_rad")
         )
         if (
-            worst_joint_continuity_check is None
-            or candidate is None
+            worst_command_slew_check is None
             or (
-                current_worst is not None
-                and float(candidate) > float(current_worst)
+                candidate is not None
+                and (
+                    current_worst is None
+                    or float(candidate) > float(current_worst)
+                )
             )
         ):
-            worst_joint_continuity_check = record
+            worst_command_slew_check = record
         if not record["passed"]:
-            joint_continuity_violation = record
+            command_slew_violation = record
+        return record
+
+    def assess_tracking_error(
+        targets: dict[str, float],
+    ) -> dict[str, Any]:
+        nonlocal tracking_error_check_count
+        nonlocal first_tracking_error_check
+        nonlocal worst_tracking_error_check
+        nonlocal tracking_error_dwell_violation
+        nonlocal tracking_error_threshold_exceedance_count
+        nonlocal tracking_error_consecutive_exceeded_steps
+        nonlocal max_tracking_error_consecutive_exceeded_steps
+        record = joint_tracking_error_dwell_record(
+            dof_names=names,
+            measured_positions=robot.get_joint_positions(),
+            targets=targets,
+            expected_names=arm_joint_names,
+            max_abs_error_rad=ARGS.arm_tracking_error_threshold_rad,
+            dwell_steps=tracking_error_dwell_steps,
+            prior_consecutive_exceeded_steps=(
+                tracking_error_consecutive_exceeded_steps
+            ),
+        )
+        tracking_error_check_count += 1
+        if first_tracking_error_check is None:
+            first_tracking_error_check = record
+        candidate = record.get("max_abs_error_rad")
+        current_worst = (
+            None
+            if worst_tracking_error_check is None
+            else worst_tracking_error_check.get("max_abs_error_rad")
+        )
+        if (
+            worst_tracking_error_check is None
+            or (
+                candidate is not None
+                and (
+                    current_worst is None
+                    or float(candidate) > float(current_worst)
+                )
+            )
+        ):
+            worst_tracking_error_check = record
+        if record.get("threshold_exceeded"):
+            tracking_error_threshold_exceedance_count += 1
+        consecutive = record.get("consecutive_exceeded_steps")
+        if consecutive is not None:
+            tracking_error_consecutive_exceeded_steps = int(consecutive)
+            recorder.arm_tracking_error_consecutive_exceeded_steps = (
+                tracking_error_consecutive_exceeded_steps
+            )
+            recorder.arm_tracking_last_observation_sim_step = (
+                recorder.sim_step
+            )
+            max_tracking_error_consecutive_exceeded_steps = max(
+                max_tracking_error_consecutive_exceeded_steps,
+                tracking_error_consecutive_exceeded_steps,
+            )
+        if not record["passed"]:
+            tracking_error_dwell_violation = record
         return record
 
     def accumulate_effort(record: dict[str, Any]) -> None:
@@ -1302,16 +1660,31 @@ def move_tcp_pose(
             break
         left_successes += int(result.left_succeeded)
         right_successes += int(result.right_succeeded)
-        continuity = assess_joint_continuity(result.combined)
-        if not continuity["passed"]:
+        slew = assess_command_slew(result.combined)
+        if not slew["passed"]:
             aborted = True
             abort_reason = (
-                "IK joint target continuity gate failed before command: "
-                f"{continuity['reason']}"
+                "IK adjacent-command slew gate failed before command: "
+                f"{slew['reason']}"
             )
             break
         apply_targets(robot, result.combined)
+        previous_command_targets = {
+            name: float(result.combined[name])
+            for name in arm_joint_names
+        }
+        recorder.arm_last_command_by_name = dict(
+            previous_command_targets
+        )
         recorder.step()
+        tracking = assess_tracking_error(previous_command_targets)
+        if not tracking["passed"]:
+            aborted = True
+            abort_reason = (
+                "arm target-to-measured tracking-error dwell gate failed "
+                f"during motion: {tracking['reason']}"
+            )
+            break
         efforts = measured_efforts(robot)
         if efforts is None:
             aborted = True
@@ -1359,16 +1732,31 @@ def move_tcp_pose(
                 "applied"
             )
             break
-        continuity = assess_joint_continuity(result.combined)
-        if not continuity["passed"]:
+        slew = assess_command_slew(result.combined)
+        if not slew["passed"]:
             aborted = True
             abort_reason = (
-                "IK joint target continuity gate failed before settle "
-                f"command: {continuity['reason']}"
+                "IK adjacent-command slew gate failed before settle "
+                f"command: {slew['reason']}"
             )
             break
         apply_targets(robot, result.combined)
+        previous_command_targets = {
+            name: float(result.combined[name])
+            for name in arm_joint_names
+        }
+        recorder.arm_last_command_by_name = dict(
+            previous_command_targets
+        )
         recorder.step()
+        tracking = assess_tracking_error(previous_command_targets)
+        if not tracking["passed"]:
+            aborted = True
+            abort_reason = (
+                "arm target-to-measured tracking-error dwell gate failed "
+                f"during settle: {tracking['reason']}"
+            )
+            break
         efforts = measured_efforts(robot)
         if efforts is None:
             aborted = True
@@ -1398,8 +1786,35 @@ def move_tcp_pose(
     if not aborted and arm_effort_samples < 1:
         aborted = True
         abort_reason = "no finite arm effort sample was recorded"
-    if aborted and arm_indices.size:
-        hold_joint_positions(robot, arm_indices)
+    if aborted:
+        measured_for_hold = np.asarray(
+            robot.get_joint_positions(), dtype=np.float64
+        )
+        if not arm_indices.size:
+            abort_recovery_reason = "no_arm_joint_indices_available"
+        elif (
+            measured_for_hold.ndim != 1
+            or len(measured_for_hold) != len(names)
+            or not np.all(np.isfinite(measured_for_hold[arm_indices]))
+        ):
+            abort_recovery_reason = (
+                "measured_arm_positions_invalid_no_new_command_applied"
+            )
+        else:
+            hold_joint_positions(robot, arm_indices)
+            held_targets = {
+                name: float(measured_for_hold[names.index(name)])
+                for name in arm_joint_names
+            }
+            recorder.arm_last_command_by_name = held_targets
+            recorder.arm_tracking_error_consecutive_exceeded_steps = 0
+            recorder.arm_tracking_last_observation_sim_step = (
+                recorder.sim_step
+            )
+            abort_recovery_applied = True
+            abort_recovery_reason = (
+                "held_finite_measured_arm_articulation"
+            )
     base_position, base_orientation = world_pose(robot)
     final_left, final_right = ik.current_end_effector_poses(
         base_position,
@@ -1470,17 +1885,82 @@ def move_tcp_pose(
             "finite telemetry required; measured prismatic force is recorded "
             "separately and is not compared with the revolute-arm threshold"
         ),
-        "joint_continuity_check_count": joint_continuity_check_count,
-        "first_joint_continuity_check": (
-            first_joint_continuity_check
+        "initial_command_baseline_by_joint": {
+            name: (
+                round(value, 6) if math.isfinite(value) else None
+            )
+            for name, value in initial_command_baseline_targets.items()
+        },
+        "initial_command_baseline_source": initial_command_baseline_source,
+        "command_slew_check_count": command_slew_check_count,
+        "first_command_slew_check": first_command_slew_check,
+        "worst_command_slew_check": worst_command_slew_check,
+        "command_slew_violation": command_slew_violation,
+        "arm_max_command_slew_rad": ARGS.arm_max_command_slew_rad,
+        "final_active_arm_command_by_joint": (
+            None
+            if recorder.arm_last_command_by_name is None
+            else {
+                name: round(float(value), 6)
+                for name, value in (
+                    recorder.arm_last_command_by_name.items()
+                )
+            }
         ),
-        "worst_joint_continuity_check": (
-            worst_joint_continuity_check
+        "tracking_error_check_count": tracking_error_check_count,
+        "first_tracking_error_check": first_tracking_error_check,
+        "worst_tracking_error_check": worst_tracking_error_check,
+        "tracking_error_dwell_violation": (
+            tracking_error_dwell_violation
         ),
-        "joint_continuity_violation": joint_continuity_violation,
-        "arm_max_target_step_rad": ARGS.arm_max_target_step_rad,
+        "tracking_error_threshold_exceedance_count": (
+            tracking_error_threshold_exceedance_count
+        ),
+        "tracking_error_initial_consecutive_exceeded_steps": (
+            initial_tracking_error_consecutive_exceeded_steps
+        ),
+        "tracking_error_observation_gap_reset": (
+            tracking_error_observation_gap_reset
+        ),
+        "tracking_error_final_consecutive_exceeded_steps": (
+            tracking_error_consecutive_exceeded_steps
+        ),
+        "tracking_error_max_consecutive_exceeded_steps": (
+            max_tracking_error_consecutive_exceeded_steps
+        ),
+        "arm_tracking_error_threshold_rad": (
+            ARGS.arm_tracking_error_threshold_rad
+        ),
+        "arm_tracking_error_dwell_seconds_configured": (
+            ARGS.arm_tracking_error_dwell_seconds
+        ),
+        "arm_tracking_error_dwell_steps": tracking_error_dwell_steps,
+        "arm_tracking_error_dwell_seconds_effective": round(
+            tracking_error_dwell_steps / float(ARGS.physics_hz), 6
+        ),
+        "arm_tracking_error_calibration": {
+            "scope": "participant_side_safety_gate",
+            "threshold_basis": (
+                "independent target-to-measured error limit, not the "
+                "adjacent-command slew limit"
+            ),
+            "dwell_basis": (
+                "configured seconds converted upward to whole physics steps; "
+                "an observation gap resets the consecutive counter"
+            ),
+            "official_benchmark_threshold": False,
+        },
+        "joint_command_safety_policy": (
+            "proposed targets are compared with the previous applied command "
+            "for slew; the active command is compared with measured joints "
+            "for sustained tracking error; commands are never clamped"
+        ),
+        "command_clamping_used": False,
+        "abort_recovery_applied": abort_recovery_applied,
+        "abort_recovery_reason": abort_recovery_reason,
         "abort_recovery_policy": (
-            "hold_current_arm_articulation_no_automatic_release"
+            "hold finite measured arm articulation; if measurement is "
+            "invalid, do not issue a new command; never release automatically"
         ),
         "target": {
             "left": {
@@ -1680,13 +2160,62 @@ def prepare_navigation_posture(
     return gates, collision_proxies
 
 
+def capture_current_navigation_posture(
+    recorder: TraceRecorder,
+) -> tuple[list[dict[str, Any]], CollisionProxySet]:
+    """Capture current collision geometry without an articulation command."""
+
+    base_position, _ = world_pose(recorder.robot)
+    root_path = core._find_articulation_root_path(ROBOT_PRIM_PATH)
+    try:
+        collision_proxies = extract_collision_proxy_set(
+            recorder.stage,
+            robot_path=ROBOT_PRIM_PATH,
+            base_frame_path=root_path,
+            base_world_z=float(base_position[2]),
+        )
+    except Exception as error:  # noqa: BLE001
+        collision_proxies = CollisionProxySet(
+            robot=(),
+            environment=(),
+            support_surface_paths=(),
+            candidate_robot_paths=(),
+            candidate_environment_paths=(),
+            unresolved_paths=(
+                f"extractor [{type(error).__name__}: {error}]",
+            ),
+            traversal_backend="failed",
+        )
+    gate = {
+        "phase": "current_asset_posture_collision_proxy_coverage",
+        "classification": "read_only_enabled_collider_coverage_gate",
+        "passed": collision_proxies.complete,
+        "current_posture_proxy_coverage": collision_proxy_coverage_summary(
+            collision_proxies,
+            capture_label="current_asset_posture_no_command",
+        ),
+        "collision_proxy_inventory": collision_proxies.record(),
+        "motion_scope": (
+            "no base, arm, gripper, or task-object command was issued"
+        ),
+        "pass_definition": (
+            "every enabled robot and environment collision prim in the "
+            "unmodified current asset posture has a finite proxy and one "
+            "support surface is explicitly identified"
+        ),
+    }
+    return [gate], collision_proxies
+
+
 def collision_proxy_coverage_summary(
     collision_proxies: CollisionProxySet,
+    *,
+    capture_label: str = "compact_navigation_stow",
 ) -> dict[str, Any]:
     """Return concise coverage evidence for a posture-specific proxy set."""
 
     return {
-        "capture_posture": "compact_navigation_stow",
+        "capture_posture": capture_label,
         "complete": collision_proxies.complete,
         "traversal_backend": collision_proxies.traversal_backend,
         "robot_proxy_count": len(collision_proxies.robot),
@@ -1697,6 +2226,12 @@ def collision_proxy_coverage_summary(
         "candidate_environment_collision_prim_count": len(
             collision_proxies.candidate_environment_paths
         ),
+        "robot_geometry_witness_count": len(
+            collision_proxies.robot_geometry_witnesses
+        ),
+        "environment_geometry_witness_count": len(
+            collision_proxies.environment_geometry_witnesses
+        ),
         "support_surface_count": len(
             collision_proxies.support_surface_paths
         ),
@@ -1704,7 +2239,53 @@ def collision_proxy_coverage_summary(
             collision_proxies.support_surface_paths
         ),
         "unresolved_path_count": len(collision_proxies.unresolved_paths),
+        "attached_payload_root_paths": list(
+            collision_proxies.attached_payload_root_paths
+        ),
+        "attached_payload_proxy_count": len(
+            collision_proxies.attached_payload_proxy_paths
+        ),
+        "missing_attached_payload_root_paths": list(
+            collision_proxies.missing_attached_payload_root_paths
+        ),
     }
+
+
+def payload_positions_in_base_frame(
+    recorder: TraceRecorder,
+    robot: SingleArticulation,
+    object_names: Iterable[str],
+) -> dict[str, tuple[float, float, float]]:
+    """Measure selected task-object origins in the current base-yaw frame."""
+
+    base_position, base_orientation = world_pose(robot)
+    yaw = yaw_from_wxyz(base_orientation)
+    cosine = math.cos(yaw)
+    sine = math.sin(yaw)
+    xform_cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+    result: dict[str, tuple[float, float, float]] = {}
+    for name in object_names:
+        path = recorder.object_paths[name]
+        prim = recorder.stage.GetPrimAtPath(path)
+        if not prim or not prim.IsValid():
+            raise RuntimeError(f"invalid monitored payload prim: {path}")
+        translation = xform_cache.GetLocalToWorldTransform(
+            prim
+        ).ExtractTranslation()
+        dx = float(translation[0]) - float(base_position[0])
+        dy = float(translation[1]) - float(base_position[1])
+        dz = float(translation[2]) - float(base_position[2])
+        relative = (
+            cosine * dx + sine * dy,
+            -sine * dx + cosine * dy,
+            dz,
+        )
+        if not all(math.isfinite(value) for value in relative):
+            raise RuntimeError(
+                f"non-finite monitored payload pose: {path}"
+            )
+        result[name] = relative
+    return result
 
 
 def drive_base_to(
@@ -1712,47 +2293,258 @@ def drive_base_to(
     robot: SingleArticulation,
     steering_ids: list[int],
     drive_ids: list[int],
-    target_xy: np.ndarray,
-    target_yaw: float,
     *,
+    certified_waypoints: tuple[Pose2, ...],
+    route_certificate: dict[str, Any],
+    collision_proxies: CollisionProxySet,
+    dynamic_geometry_certificate_allowance_metres: float,
+    dynamic_geometry_operational_limit_metres: float,
+    segment_index: int,
     max_steps: int,
     max_speed: float,
     max_accel: float,
     phase: str,
     intent: str,
+    payload_reference_by_name: (
+        dict[str, tuple[float, float, float]] | None
+    ) = None,
+    payload_drift_tolerance_metres: float | None = None,
 ) -> dict[str, Any]:
     recorder.set_phase(phase, intent=intent)
     controller = robot.get_articulation_controller()
-    position_tolerance = 0.04
-    yaw_tolerance = math.radians(3.0)
+    position_tolerance = (
+        ARGS.route_operational_cross_track_tolerance
+    )
+    yaw_tolerance = math.radians(
+        ARGS.route_operational_yaw_tolerance_deg
+    )
+    certificate_yaw_tolerance = math.radians(
+        ARGS.route_yaw_tracking_tolerance_deg
+    )
+    target_xy = np.zeros(2, dtype=np.float64)
+    target_yaw = 0.0
+    segment_route = (
+        Pose2(0.0, 0.0, 0.0),
+        Pose2(0.0, 0.0, 0.0),
+    )
+    runtime_route_sha256: str | None = None
+    certificate_route_sha256 = route_certificate.get(
+        "validated_inputs", {}
+    ).get("route_sha256")
+    certificate_sha256 = route_certificate.get("certificate_sha256")
+    certificate_binding_error: str | None = None
+    initial_failure_classification = "route_certificate_binding_violation"
+    maximum_robot_planar_radius = 0.0
+    maximum_robot_spatial_radius = 0.0
+    certificate_base_z = 0.0
+    dynamic_certificate_allowance = 0.0
+    dynamic_operational_limit = 0.0
+    collision_base_frame_path: str | None = None
+    payload_monitor_enabled = (
+        payload_reference_by_name is not None
+        or payload_drift_tolerance_metres is not None
+    )
+    normalized_payload_reference: dict[
+        str, tuple[float, float, float]
+    ] = {}
+    normalized_payload_tolerance: float | None = None
+    try:
+        if not bool(route_certificate.get("passed", False)):
+            raise ValueError("route certificate is not passing")
+        if not route_certificate_is_valid(route_certificate):
+            raise ValueError(
+                "route certificate digest or deterministic replay is invalid"
+            )
+        if not collision_proxies.complete:
+            raise ValueError(
+                "live collision geometry capture is incomplete"
+            )
+        collision_base_frame_path = core._find_articulation_root_path(
+            ROBOT_PRIM_PATH
+        )
+        dynamic_certificate_allowance = float(
+            dynamic_geometry_certificate_allowance_metres
+        )
+        dynamic_operational_limit = float(
+            dynamic_geometry_operational_limit_metres
+        )
+        if (
+            not math.isfinite(dynamic_certificate_allowance)
+            or not math.isfinite(dynamic_operational_limit)
+            or dynamic_operational_limit < 0.0
+            or dynamic_certificate_allowance
+            - dynamic_operational_limit
+            < 0.02
+        ):
+            raise ValueError(
+                "dynamic geometry limits require a finite non-negative "
+                "operational limit and at least 0.02m reaction reserve"
+            )
+        if (
+            not isinstance(segment_index, int)
+            or isinstance(segment_index, bool)
+            or segment_index < 0
+            or segment_index + 1 >= len(certified_waypoints)
+        ):
+            raise ValueError("certified segment index is out of range")
+        runtime_route_sha256 = route_sha256(certified_waypoints)
+        if runtime_route_sha256 != certificate_route_sha256:
+            raise ValueError(
+                "runtime route does not match the certificate route digest"
+            )
+        validated_inputs = route_certificate.get("validated_inputs", {})
+        if (
+            validated_inputs.get("robot_geometry_sha256")
+            != proxy_geometry_sha256(collision_proxies.robot)
+            or validated_inputs.get("obstacle_geometry_sha256")
+            != proxy_geometry_sha256(collision_proxies.environment)
+        ):
+            raise ValueError(
+                "runtime collision proxy geometry does not match the "
+                "certificate inputs"
+            )
+        certified_clearance = float(
+            route_certificate.get("config", {}).get(
+                "clearance_margin"
+            )
+        )
+        certificate_base_z = float(
+            route_certificate.get("config", {}).get("base_z")
+        )
+        if not math.isfinite(certificate_base_z):
+            raise ValueError("certificate base z is non-finite")
+        if not math.isclose(
+            certified_clearance,
+            ARGS.route_clearance_margin
+            + dynamic_certificate_allowance,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(
+                "route certificate does not bind the requested dynamic "
+                "geometry allowance"
+            )
+        envelope = route_certificate.get("execution_envelope", {})
+        if not math.isclose(
+            float(envelope.get("translation_tolerance_metres")),
+            ARGS.route_cross_track_tolerance,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(
+                "certificate translation reserve differs from runtime limit"
+            )
+        if not math.isclose(
+            float(envelope.get("yaw_tolerance_rad")),
+            certificate_yaw_tolerance,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(
+                "certificate yaw reserve differs from runtime limit"
+            )
+        maximum_robot_planar_radius = float(
+            envelope.get("maximum_robot_planar_radius_metres")
+        )
+        maximum_robot_spatial_radius = float(
+            envelope.get("maximum_robot_spatial_radius_metres")
+        )
+        if (
+            not math.isfinite(maximum_robot_planar_radius)
+            or maximum_robot_planar_radius < 0.0
+            or not math.isfinite(maximum_robot_spatial_radius)
+            or maximum_robot_spatial_radius
+            < maximum_robot_planar_radius
+        ):
+            raise ValueError(
+                "certificate robot radii are invalid"
+            )
+        segment_route = (
+            certified_waypoints[segment_index],
+            certified_waypoints[segment_index + 1],
+        )
+        target_xy = np.asarray(
+            (segment_route[1].x, segment_route[1].y),
+            dtype=np.float64,
+        )
+        target_yaw = float(segment_route[1].yaw)
+        if payload_monitor_enabled:
+            if (
+                payload_reference_by_name is None
+                or payload_drift_tolerance_metres is None
+                or not payload_reference_by_name
+            ):
+                raise ValueError(
+                    "payload monitoring requires a non-empty reference and "
+                    "a drift tolerance"
+                )
+            normalized_payload_tolerance = float(
+                payload_drift_tolerance_metres
+            )
+            if (
+                not math.isfinite(normalized_payload_tolerance)
+                or normalized_payload_tolerance <= 0.0
+            ):
+                raise ValueError(
+                    "payload drift tolerance must be finite and positive"
+                )
+            normalized_payload_reference = {
+                str(name): tuple(float(value) for value in values)
+                for name, values in payload_reference_by_name.items()
+            }
+            if any(
+                len(values) != 3
+                or not all(math.isfinite(value) for value in values)
+                for values in normalized_payload_reference.values()
+            ):
+                raise ValueError(
+                    "payload reference positions must be finite 3-D values"
+                )
+            required_clearance = (
+                ARGS.route_clearance_margin
+                + dynamic_certificate_allowance
+            )
+            if not math.isclose(
+                certified_clearance,
+                required_clearance,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError(
+                    "route certificate does not bind the loaded geometry "
+                    "allowance"
+                )
+        if not BASE_MOTION_STOPPING_ENVELOPE_CERTIFIED:
+            initial_failure_classification = (
+                "base_motion_stopping_envelope_uncertified"
+            )
+            raise RuntimeError(BASE_MOTION_STOPPING_ENVELOPE_LIMITATION)
+    except Exception as error:  # noqa: BLE001 - fail before wheel motion
+        certificate_binding_error = (
+            f"{type(error).__name__}: {error}"
+        )
     dt = 1.0 / recorder.physics_hz
     command = np.zeros(3, dtype=np.float64)
     settled_steps = 0
     start_step = recorder.sim_step
     path_length = 0.0
     previous_position, _ = world_pose(robot)
-    segment_start = previous_position[:2].copy()
-    segment_route = (
-        Pose2(
-            float(segment_start[0]),
-            float(segment_start[1]),
-            target_yaw,
-        ),
-        Pose2(float(target_xy[0]), float(target_xy[1]), target_yaw),
-    )
     steps = 0
-    aborted = False
-    abort_reason: str | None = None
-    abort_classification: str | None = None
+    aborted = certificate_binding_error is not None
+    abort_reason: str | None = certificate_binding_error
+    abort_classification: str | None = (
+        initial_failure_classification
+        if certificate_binding_error is not None
+        else None
+    )
     drive_indices = np.asarray(drive_ids, dtype=np.int64)
     steering_indices = np.asarray(steering_ids, dtype=np.int64)
-    steering_alignment_error = float(
-        getattr(
-            core,
-            "STEERING_FULL_SPEED_ERROR_RAD",
-            math.radians(8.0),
+    try:
+        steering_alignment_error = float(
+            core.STEERING_FULL_SPEED_ERROR_RAD
         )
-    )
+    except AttributeError:
+        steering_alignment_error = math.radians(8.0)
     motion_monitor = BaseMotionMonitor(
         physics_hz=recorder.physics_hz,
         minimum_planar_command_speed=ARGS.base_min_speed,
@@ -1774,17 +2566,327 @@ def drive_base_to(
     max_abs_measured_drive_velocity_rad_s = 0.0
     peak_abs_measured_drive_effort = 0.0
     drive_effort_sample_count = 0
+    first_nonzero_wheel_command_sim_step: int | None = None
     base_telemetry_nonfinite = False
     final_window_displacement: float | None = None
     maximum_cross_track_error = 0.0
+    maximum_route_yaw_error = 0.0
+    maximum_runtime_yaw_arc = 0.0
+    maximum_payload_to_base_drift = 0.0
+    live_geometry_check_count = 0
+    live_geometry_post_stop_check_count = 0
+    maximum_live_geometry_planar_escape = 0.0
+    maximum_live_geometry_z_escape = 0.0
+    maximum_nonplanar_base_escape = 0.0
+    maximum_combined_world_geometry_escape = 0.0
+    first_live_geometry_failure: dict[str, Any] | None = None
+    final_live_geometry_record: dict[str, Any] | None = None
+
+    def compact_live_geometry_record(
+        record: dict[str, Any],
+        *,
+        timing: str,
+    ) -> dict[str, Any]:
+        return {
+            "timing": timing,
+            "simulation_step": recorder.sim_step,
+            "passed": bool(record.get("passed", False)),
+            "failure": record.get("failure"),
+            "reason": record.get("reason"),
+            "dynamic_allowance_metres": record.get(
+                "dynamic_allowance_metres"
+            ),
+            "inventory_exact": record.get("inventory_exact"),
+            "maximum_planar_escape_metres": record.get(
+                "maximum_planar_escape_metres"
+            ),
+            "maximum_z_escape_metres": record.get(
+                "maximum_z_escape_metres"
+            ),
+            "nonplanar_base": record.get("nonplanar_base"),
+            "combined_world_escape_metres": record.get(
+                "combined_world_escape_metres"
+            ),
+            "missing_proxy_paths": record.get("missing_proxy_paths", []),
+            "unexpected_proxy_paths": record.get(
+                "unexpected_proxy_paths", []
+            ),
+            "missing_witness_keys": record.get(
+                "missing_witness_keys", []
+            ),
+            "unexpected_witness_keys": record.get(
+                "unexpected_witness_keys", []
+            ),
+            "unresolved_live_geometry": record.get(
+                "unresolved_live_geometry", []
+            ),
+        }
+
+    def measure_live_collision_geometry(
+        allowance: float,
+        *,
+        timing: str,
+        post_stop: bool = False,
+    ) -> dict[str, Any]:
+        nonlocal live_geometry_check_count
+        nonlocal live_geometry_post_stop_check_count
+        nonlocal maximum_live_geometry_planar_escape
+        nonlocal maximum_live_geometry_z_escape
+        nonlocal maximum_nonplanar_base_escape
+        nonlocal maximum_combined_world_geometry_escape
+        nonlocal first_live_geometry_failure
+        nonlocal final_live_geometry_record
+        if collision_base_frame_path is None:
+            record = {
+                "passed": False,
+                "failure": "route_certificate_binding_violation",
+                "reason": "collision base frame was not authenticated",
+                "dynamic_allowance_metres": allowance,
+            }
+        else:
+            record = live_collision_geometry_containment_record(
+                recorder.stage,
+                collision_proxies,
+                robot_path=ROBOT_PRIM_PATH,
+                base_frame_path=collision_base_frame_path,
+                dynamic_allowance=allowance,
+            )
+            base_position, base_orientation = world_pose(robot)
+            nonplanar = base_nonplanar_deviation_record(
+                position_z=float(base_position[2]),
+                orientation_wxyz=tuple(
+                    float(value) for value in base_orientation
+                ),
+                reference_z=certificate_base_z,
+                maximum_robot_radius=maximum_robot_spatial_radius,
+                tolerance=allowance,
+            )
+            live_planar_escape = record.get(
+                "maximum_planar_escape_metres"
+            )
+            live_z_escape = record.get("maximum_z_escape_metres")
+            base_escape = nonplanar.get("combined_escape_metres")
+            components_valid = all(
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and math.isfinite(float(value))
+                for value in (
+                    live_planar_escape,
+                    live_z_escape,
+                    base_escape,
+                )
+            )
+            combined_world_escape = (
+                max(
+                    float(live_planar_escape),
+                    float(live_z_escape),
+                )
+                + float(base_escape)
+                if components_valid
+                else None
+            )
+            combined_within_allowance = bool(
+                combined_world_escape is not None
+                and combined_world_escape <= allowance + 1e-12
+            )
+            record = {
+                **record,
+                "nonplanar_base": nonplanar,
+                "combined_world_escape_metres": combined_world_escape,
+                "passed": bool(
+                    record.get("passed", False)
+                    and nonplanar.get("passed", False)
+                    and combined_within_allowance
+                ),
+            }
+            if not bool(nonplanar.get("passed", False)):
+                record["failure"] = nonplanar.get("failure")
+                record["reason"] = nonplanar.get("reason")
+            elif (
+                bool(record.get("robot_geometry"))
+                and bool(record.get("environment_geometry"))
+                and not combined_within_allowance
+            ):
+                record["failure"] = (
+                    "combined_world_geometry_envelope_violation"
+                )
+                record["reason"] = (
+                    "summed live relative-geometry and non-planar base "
+                    "escape exceeded the single dynamic allowance"
+                )
+        live_geometry_check_count += 1
+        if post_stop:
+            live_geometry_post_stop_check_count += 1
+        planar_escape = record.get("maximum_planar_escape_metres")
+        z_escape = record.get("maximum_z_escape_metres")
+        if isinstance(planar_escape, (int, float)) and math.isfinite(
+            float(planar_escape)
+        ):
+            maximum_live_geometry_planar_escape = max(
+                maximum_live_geometry_planar_escape,
+                float(planar_escape),
+            )
+        if isinstance(z_escape, (int, float)) and math.isfinite(
+            float(z_escape)
+        ):
+            maximum_live_geometry_z_escape = max(
+                maximum_live_geometry_z_escape,
+                float(z_escape),
+            )
+        nonplanar_record = record.get("nonplanar_base")
+        if isinstance(nonplanar_record, dict):
+            combined_escape = nonplanar_record.get(
+                "combined_escape_metres"
+            )
+            if isinstance(combined_escape, (int, float)) and math.isfinite(
+                float(combined_escape)
+            ):
+                maximum_nonplanar_base_escape = max(
+                    maximum_nonplanar_base_escape,
+                    float(combined_escape),
+                )
+        combined_world_escape = record.get(
+            "combined_world_escape_metres"
+        )
+        if isinstance(
+            combined_world_escape, (int, float)
+        ) and math.isfinite(float(combined_world_escape)):
+            maximum_combined_world_geometry_escape = max(
+                maximum_combined_world_geometry_escape,
+                float(combined_world_escape),
+            )
+        compact = compact_live_geometry_record(record, timing=timing)
+        final_live_geometry_record = compact
+        if not compact["passed"] and first_live_geometry_failure is None:
+            first_live_geometry_failure = compact
+        return record
+
+    def measure_payload_to_base_drift() -> float:
+        nonlocal maximum_payload_to_base_drift
+        if not payload_monitor_enabled:
+            return 0.0
+        measured = payload_positions_in_base_frame(
+            recorder,
+            robot,
+            normalized_payload_reference,
+        )
+        if set(measured) != set(normalized_payload_reference):
+            raise RuntimeError(
+                "monitored payload name set changed during transport"
+            )
+        maximum = max(
+            math.dist(measured[name], normalized_payload_reference[name])
+            for name in measured
+        )
+        if not math.isfinite(maximum):
+            raise RuntimeError("payload drift measurement is non-finite")
+        maximum_payload_to_base_drift = max(
+            maximum_payload_to_base_drift, maximum
+        )
+        return maximum
+
     try:
         for steps in range(1, max_steps + 1):
+            if aborted:
+                break
             position, orientation = world_pose(robot)
             path_length += float(
                 np.linalg.norm(position[:2] - previous_position[:2])
             )
             previous_position = position
             yaw = yaw_from_wxyz(orientation)
+            if route_sha256(certified_waypoints) != certificate_route_sha256:
+                aborted = True
+                abort_classification = "route_certificate_binding_violation"
+                abort_reason = (
+                    "certified route digest changed before a wheel command"
+                )
+                break
+            tube_record = route_execution_tube_record(
+                Pose2(
+                    float(position[0]),
+                    float(position[1]),
+                    yaw,
+                ),
+                segment_route,
+                translation_tolerance=(
+                    ARGS.route_operational_cross_track_tolerance
+                ),
+                yaw_tolerance_rad=yaw_tolerance,
+            )
+            deviation = tube_record["deviation"]
+            if deviation is None:
+                aborted = True
+                abort_classification = str(tube_record["failure"])
+                abort_reason = str(tube_record["reason"])
+                break
+            cross_track_error = float(
+                deviation["cross_track_metres"]
+            )
+            route_yaw_error = float(deviation["yaw_error_rad"])
+            route_yaw_arc = (
+                2.0
+                * maximum_robot_planar_radius
+                * math.sin(0.5 * route_yaw_error)
+            )
+            maximum_cross_track_error = max(
+                maximum_cross_track_error, cross_track_error
+            )
+            maximum_route_yaw_error = max(
+                maximum_route_yaw_error, route_yaw_error
+            )
+            maximum_runtime_yaw_arc = max(
+                maximum_runtime_yaw_arc, route_yaw_arc
+            )
+            if not tube_record["passed"]:
+                aborted = True
+                abort_classification = str(tube_record["failure"])
+                abort_reason = (
+                    "measured base pose left the certified SE(2) tube before "
+                    "a wheel command"
+                )
+                break
+            try:
+                payload_drift = measure_payload_to_base_drift()
+            except Exception as error:  # noqa: BLE001
+                aborted = True
+                abort_classification = "payload_telemetry_unavailable"
+                abort_reason = (
+                    "payload-to-base monitoring failed before a wheel command: "
+                    f"{type(error).__name__}: {error}"
+                )
+                break
+            if (
+                normalized_payload_tolerance is not None
+                and payload_drift > normalized_payload_tolerance
+            ):
+                aborted = True
+                abort_classification = (
+                    "payload_geometry_envelope_violation"
+                )
+                abort_reason = (
+                    "measured payload-to-base drift exceeded the clearance "
+                    "reserved by the loaded route certificate before a wheel "
+                    "command"
+                )
+                break
+            live_geometry_before = measure_live_collision_geometry(
+                dynamic_operational_limit,
+                timing="immediately_before_physics_step",
+            )
+            if not bool(live_geometry_before.get("passed", False)):
+                aborted = True
+                abort_classification = str(
+                    live_geometry_before.get("failure")
+                    or "dynamic_geometry_envelope_violation"
+                )
+                abort_reason = (
+                    "live articulated robot/payload collision geometry left "
+                    "the operational containment envelope before a wheel "
+                    "command: "
+                    + str(live_geometry_before.get("reason"))
+                )
+                break
             world_error = (
                 np.asarray(target_xy, dtype=np.float64) - position[:2]
             )
@@ -1923,6 +3025,11 @@ def drive_base_to(
                 max_abs_drive_target_rad_s,
                 float(np.max(np.abs(drive_targets))),
             )
+            if (
+                first_nonzero_wheel_command_sim_step is None
+                and float(np.max(np.abs(drive_targets))) > 1e-9
+            ):
+                first_nonzero_wheel_command_sim_step = recorder.sim_step
             max_abs_measured_drive_velocity_rad_s = max(
                 max_abs_measured_drive_velocity_rad_s,
                 float(np.max(np.abs(measured_drive_velocities))),
@@ -1978,23 +3085,92 @@ def drive_base_to(
                 )
             )
             recorder.step()
-            position_after, _orientation_after = world_pose(robot)
-            cross_track_error = distance_to_polyline(
+            live_geometry_after = measure_live_collision_geometry(
+                dynamic_operational_limit,
+                timing="immediately_after_physics_step",
+            )
+            if not bool(live_geometry_after.get("passed", False)):
+                aborted = True
+                abort_classification = str(
+                    live_geometry_after.get("failure")
+                    or "dynamic_geometry_envelope_violation"
+                )
+                abort_reason = (
+                    "live articulated robot/payload collision geometry left "
+                    "the operational containment envelope after a physics "
+                    "step: "
+                    + str(live_geometry_after.get("reason"))
+                )
+                break
+            position_after, orientation_after = world_pose(robot)
+            tube_record_after = route_execution_tube_record(
                 Pose2(
                     float(position_after[0]),
                     float(position_after[1]),
-                    target_yaw,
+                    yaw_from_wxyz(orientation_after),
                 ),
                 segment_route,
+                translation_tolerance=(
+                    ARGS.route_operational_cross_track_tolerance
+                ),
+                yaw_tolerance_rad=yaw_tolerance,
+            )
+            deviation_after = tube_record_after["deviation"]
+            if deviation_after is None:
+                aborted = True
+                abort_classification = str(
+                    tube_record_after["failure"]
+                )
+                abort_reason = str(tube_record_after["reason"])
+                break
+            cross_track_error = float(
+                deviation_after["cross_track_metres"]
+            )
+            route_yaw_error = float(
+                deviation_after["yaw_error_rad"]
+            )
+            route_yaw_arc = (
+                2.0
+                * maximum_robot_planar_radius
+                * math.sin(0.5 * route_yaw_error)
             )
             maximum_cross_track_error = max(
                 maximum_cross_track_error, cross_track_error
             )
-            if cross_track_error > ARGS.route_cross_track_tolerance:
+            maximum_route_yaw_error = max(
+                maximum_route_yaw_error, route_yaw_error
+            )
+            maximum_runtime_yaw_arc = max(
+                maximum_runtime_yaw_arc, route_yaw_arc
+            )
+            if not tube_record_after["passed"]:
                 aborted = True
-                abort_classification = "cross_track_violation"
+                abort_classification = str(tube_record_after["failure"])
                 abort_reason = (
-                    "measured base pose left the preflighted route corridor"
+                    "measured base pose left the certified SE(2) tube"
+                )
+                break
+            try:
+                payload_drift = measure_payload_to_base_drift()
+            except Exception as error:  # noqa: BLE001
+                aborted = True
+                abort_classification = "payload_telemetry_unavailable"
+                abort_reason = (
+                    "payload-to-base monitoring failed after a wheel command: "
+                    f"{type(error).__name__}: {error}"
+                )
+                break
+            if (
+                normalized_payload_tolerance is not None
+                and payload_drift > normalized_payload_tolerance
+            ):
+                aborted = True
+                abort_classification = (
+                    "payload_geometry_envelope_violation"
+                )
+                abort_reason = (
+                    "measured payload-to-base drift exceeded the clearance "
+                    "reserved by the loaded route certificate"
                 )
                 break
             joint_positions_after = np.asarray(
@@ -2089,8 +3265,89 @@ def drive_base_to(
                 "external_contact_telemetry": "unavailable",
             }
         )
-    for _ in range(30):
-        recorder.step()
+    post_stop_route_check_count = 0
+    post_stop_route_failure: dict[str, Any] | None = None
+    for settle_index in range(30):
+        for timing in (
+            "before_post_stop_physics_step",
+            "after_post_stop_physics_step",
+        ):
+            if timing.startswith("after"):
+                recorder.step()
+            geometry_record = measure_live_collision_geometry(
+                dynamic_certificate_allowance,
+                timing=f"{timing}_{settle_index + 1}",
+                post_stop=True,
+            )
+            if not bool(geometry_record.get("passed", False)):
+                aborted = True
+                if abort_classification is None:
+                    abort_classification = str(
+                        geometry_record.get("failure")
+                        or "post_stop_dynamic_geometry_violation"
+                    )
+                    abort_reason = (
+                        "live collision geometry left the full certified "
+                        "allowance during zero-command settling: "
+                        + str(geometry_record.get("reason"))
+                    )
+            if certificate_binding_error is None:
+                post_position, post_orientation = world_pose(robot)
+                post_route = route_execution_tube_record(
+                    Pose2(
+                        float(post_position[0]),
+                        float(post_position[1]),
+                        yaw_from_wxyz(post_orientation),
+                    ),
+                    segment_route,
+                    translation_tolerance=(
+                        ARGS.route_cross_track_tolerance
+                    ),
+                    yaw_tolerance_rad=certificate_yaw_tolerance,
+                )
+                post_stop_route_check_count += 1
+                deviation = post_route.get("deviation")
+                if isinstance(deviation, dict):
+                    post_cross_track = float(
+                        deviation["cross_track_metres"]
+                    )
+                    post_yaw_error = float(
+                        deviation["yaw_error_rad"]
+                    )
+                    maximum_cross_track_error = max(
+                        maximum_cross_track_error,
+                        post_cross_track,
+                    )
+                    maximum_route_yaw_error = max(
+                        maximum_route_yaw_error,
+                        post_yaw_error,
+                    )
+                    maximum_runtime_yaw_arc = max(
+                        maximum_runtime_yaw_arc,
+                        2.0
+                        * maximum_robot_planar_radius
+                        * math.sin(0.5 * post_yaw_error),
+                    )
+                if not bool(post_route.get("passed", False)):
+                    abbreviated = {
+                        "timing": f"{timing}_{settle_index + 1}",
+                        "simulation_step": recorder.sim_step,
+                        "failure": post_route.get("failure"),
+                        "reason": post_route.get("reason"),
+                        "deviation": deviation,
+                    }
+                    if post_stop_route_failure is None:
+                        post_stop_route_failure = abbreviated
+                    aborted = True
+                    if abort_classification is None:
+                        abort_classification = str(
+                            post_route.get("failure")
+                            or "post_stop_route_tube_violation"
+                        )
+                        abort_reason = (
+                            "base pose left the full certified route tube "
+                            "during zero-command settling"
+                        )
     position, orientation = world_pose(robot)
     final_yaw = yaw_from_wxyz(orientation)
     position_error = float(np.linalg.norm(target_xy - position[:2]))
@@ -2103,6 +3360,10 @@ def drive_base_to(
         "aborted": aborted,
         "abort_classification": abort_classification,
         "abort_reason": abort_reason,
+        "certificate_sha256": certificate_sha256,
+        "route_sha256": runtime_route_sha256,
+        "certificate_route_sha256": certificate_route_sha256,
+        "certified_segment_index": segment_index,
         "target_xy": rounded(target_xy),
         "final_xy": rounded(position[:2]),
         "position_error_metres": round(position_error, 6),
@@ -2126,7 +3387,8 @@ def drive_base_to(
             minimum_speed_floor_last_step
         ),
         "minimum_planar_command_floor_scope": (
-            "planar position error outside the 0.04m final tolerance only"
+            "planar position error outside the configured "
+            f"{position_tolerance:.6g}m operational endpoint tolerance only"
         ),
         "stall_window_seconds": ARGS.base_stall_seconds,
         "stall_grace_seconds": ARGS.base_stall_grace_seconds,
@@ -2165,6 +3427,21 @@ def drive_base_to(
             peak_abs_measured_drive_effort, 6
         ),
         "drive_effort_sample_count": drive_effort_sample_count,
+        "first_nonzero_wheel_command_sim_step": (
+            first_nonzero_wheel_command_sim_step
+        ),
+        "base_motion_stopping_envelope_certified": (
+            BASE_MOTION_STOPPING_ENVELOPE_CERTIFIED
+        ),
+        "base_motion_nonzero_commands_authorized": bool(
+            BASE_MOTION_STOPPING_ENVELOPE_CERTIFIED
+            and certificate_binding_error is None
+        ),
+        "base_motion_stopping_envelope_limitation": (
+            None
+            if BASE_MOTION_STOPPING_ENVELOPE_CERTIFIED
+            else BASE_MOTION_STOPPING_ENVELOPE_LIMITATION
+        ),
         "base_telemetry_nonfinite": base_telemetry_nonfinite,
         "external_contact_telemetry": "unavailable",
         "classification_limitation": (
@@ -2174,8 +3451,108 @@ def drive_base_to(
         "maximum_cross_track_error_metres": round(
             maximum_cross_track_error, 6
         ),
-        "cross_track_tolerance_metres": (
+        "maximum_route_yaw_error_degrees": round(
+            math.degrees(maximum_route_yaw_error), 6
+        ),
+        "maximum_runtime_yaw_arc_metres": round(
+            maximum_runtime_yaw_arc, 6
+        ),
+        "certificate_cross_track_tolerance_metres": (
             ARGS.route_cross_track_tolerance
+        ),
+        "operational_cross_track_tolerance_metres": (
+            ARGS.route_operational_cross_track_tolerance
+        ),
+        "execution_translation_reserve_metres": (
+            ARGS.route_cross_track_tolerance
+        ),
+        "certificate_yaw_tolerance_degrees": (
+            ARGS.route_yaw_tracking_tolerance_deg
+        ),
+        "operational_yaw_tolerance_degrees": (
+            ARGS.route_operational_yaw_tolerance_deg
+        ),
+        "dynamic_geometry_certificate_allowance_metres": (
+            dynamic_certificate_allowance
+        ),
+        "dynamic_geometry_operational_limit_metres": (
+            dynamic_operational_limit
+        ),
+        "dynamic_geometry_certificate_operational_gap_metres": (
+            dynamic_certificate_allowance - dynamic_operational_limit
+        ),
+        "live_geometry_check_count": live_geometry_check_count,
+        "live_geometry_post_stop_check_count": (
+            live_geometry_post_stop_check_count
+        ),
+        "maximum_live_geometry_planar_escape_metres": round(
+            maximum_live_geometry_planar_escape, 6
+        ),
+        "maximum_live_geometry_z_escape_metres": round(
+            maximum_live_geometry_z_escape, 6
+        ),
+        "maximum_nonplanar_base_escape_metres": round(
+            maximum_nonplanar_base_escape, 6
+        ),
+        "maximum_combined_world_geometry_escape_metres": round(
+            maximum_combined_world_geometry_escape, 6
+        ),
+        "first_live_geometry_failure": first_live_geometry_failure,
+        "final_live_geometry_record": final_live_geometry_record,
+        "live_geometry_containment_passed": (
+            first_live_geometry_failure is None
+        ),
+        "post_stop_route_check_count": post_stop_route_check_count,
+        "post_stop_route_failure": post_stop_route_failure,
+        "payload_monitor_enabled": payload_monitor_enabled,
+        "payload_reference_by_name": {
+            name: rounded(values)
+            for name, values in sorted(
+                normalized_payload_reference.items()
+            )
+        },
+        "payload_drift_tolerance_metres": (
+            normalized_payload_tolerance
+        ),
+        "maximum_payload_to_base_drift_metres": round(
+            maximum_payload_to_base_drift, 6
+        ),
+        "payload_geometry_envelope_passed": bool(
+            first_live_geometry_failure is None
+            and abort_classification
+            not in {
+                "payload_telemetry_unavailable",
+                "payload_geometry_envelope_violation",
+                "collision_geometry_inventory_mismatch",
+                "dynamic_geometry_envelope_violation",
+                "invalid_live_geometry_capture",
+                "live_geometry_unresolved",
+                "invalid_nonplanar_base_pose",
+                "nonplanar_base_envelope_violation",
+                "combined_dynamic_geometry_violation",
+                "combined_world_geometry_envelope_violation",
+            }
+        ),
+        "execution_tube_passed": bool(
+            certificate_binding_error is None
+            and first_live_geometry_failure is None
+            and post_stop_route_failure is None
+            and abort_classification
+            not in {
+                "route_certificate_binding_violation",
+                "cross_track_violation",
+                "route_yaw_violation",
+                "payload_telemetry_unavailable",
+                "payload_geometry_envelope_violation",
+                "collision_geometry_inventory_mismatch",
+                "dynamic_geometry_envelope_violation",
+                "invalid_live_geometry_capture",
+                "live_geometry_unresolved",
+                "invalid_nonplanar_base_pose",
+                "nonplanar_base_envelope_violation",
+                "combined_dynamic_geometry_violation",
+                "combined_world_geometry_envelope_violation",
+            }
         ),
         "position_tolerance_metres": position_tolerance,
         "yaw_tolerance_degrees": math.degrees(yaw_tolerance),
@@ -2186,7 +3563,12 @@ def drive_base_to(
         ),
         "pass_definition": (
             "acceleration-limited closed-loop base pose within tolerance "
-            "without a steering, telemetry, or post-alignment motion abort"
+            "inside smaller operational SE(2)/live-geometry envelopes, with "
+            "every pre-step, post-step, and zero-command settling sample "
+            "remaining inside the full certificate-bound envelopes and "
+            "without a steering, telemetry, or post-alignment motion abort; "
+            "currently unreachable while nonzero base motion remains "
+            "fail-closed pending a certificate-bound stopping envelope"
         ),
     }
 
@@ -2250,27 +3632,43 @@ def fail_closed_result(
     }
 
 
-def validate_navigation_route(
+def make_navigation_waypoints(
     robot: SingleArticulation,
-    collision_proxies: CollisionProxySet,
     route_targets: Iterable[np.ndarray],
     *,
     target_yaw: float,
-    phase: str,
-) -> dict[str, Any]:
+) -> tuple[Pose2, ...]:
     base_position, base_orientation = world_pose(robot)
     current_yaw = yaw_from_wxyz(base_orientation)
-    waypoints = [
+    waypoints = (
         Pose2(
             float(base_position[0]),
             float(base_position[1]),
             current_yaw,
-        )
-    ]
-    waypoints.extend(
+        ),
+        *(
         Pose2(float(target[0]), float(target[1]), target_yaw)
         for target in route_targets
+        ),
     )
+    return tuple(waypoints)
+
+
+def validate_navigation_route(
+    robot: SingleArticulation,
+    collision_proxies: CollisionProxySet,
+    waypoints: tuple[Pose2, ...],
+    *,
+    phase: str,
+    capture_label: str = "compact_navigation_stow",
+    geometry_deformation_allowance_metres: float | None = None,
+) -> dict[str, Any]:
+    dynamic_allowance = (
+        ARGS.dynamic_geometry_certificate_allowance_metres
+        if geometry_deformation_allowance_metres is None
+        else float(geometry_deformation_allowance_metres)
+    )
+    base_position, _base_orientation = world_pose(robot)
     certificate = validate_route(
         collision_proxies.robot,
         collision_proxies.environment,
@@ -2280,7 +3678,16 @@ def validate_navigation_route(
             max_yaw_step_rad=math.radians(
                 ARGS.route_max_yaw_step_deg
             ),
-            clearance_margin=ARGS.route_clearance_margin,
+            clearance_margin=(
+                ARGS.route_clearance_margin
+                + dynamic_allowance
+            ),
+            execution_translation_tolerance=(
+                ARGS.route_cross_track_tolerance
+            ),
+            execution_yaw_tolerance_rad=math.radians(
+                ARGS.route_yaw_tracking_tolerance_deg
+            ),
             base_z=float(base_position[2]),
             collision_coverage_complete=collision_proxies.complete,
         ),
@@ -2293,7 +3700,8 @@ def validate_navigation_route(
         "passed": bool(certificate["passed"]),
         "certificate": certificate,
         "post_stow_proxy_coverage": collision_proxy_coverage_summary(
-            collision_proxies
+            collision_proxies,
+            capture_label=capture_label,
         ),
         "collision_proxy_inventory_complete": (
             collision_proxies.complete
@@ -2307,14 +3715,24 @@ def validate_navigation_route(
         ),
         "route_waypoints": [
             {
-                "x": round(waypoint.x, 6),
-                "y": round(waypoint.y, 6),
-                "yaw_degrees": round(
-                    math.degrees(waypoint.yaw), 6
-                ),
+                "x": float(waypoint.x),
+                "y": float(waypoint.y),
+                "yaw_rad": float(waypoint.yaw),
             }
             for waypoint in waypoints
         ],
+        "route_sha256": certificate.get(
+            "validated_inputs", {}
+        ).get("route_sha256"),
+        "execution_translation_reserve_metres": (
+            ARGS.route_cross_track_tolerance
+        ),
+        "execution_yaw_reserve_degrees": (
+            ARGS.route_yaw_tracking_tolerance_deg
+        ),
+        "geometry_deformation_allowance_metres": (
+            dynamic_allowance
+        ),
         "pass_definition": (
             "complete enabled-collider coverage and no inflated 2.5-D "
             "collision-proxy overlap over the entire sampled SE(2) route"
@@ -2322,6 +3740,127 @@ def validate_navigation_route(
         "limitation": (
             "This conservative participant preflight is not an organizer "
             "collision or scoring contract."
+        ),
+    }
+
+
+def live_geometry_authorization_gate(
+    recorder: TraceRecorder,
+    robot: SingleArticulation,
+    collision_proxies: CollisionProxySet,
+    *,
+    route_certificate: dict[str, Any],
+    phase: str,
+    operational_limit_metres: float,
+    certificate_allowance_metres: float,
+) -> dict[str, Any]:
+    """Require a live exact-witness recapture before any base command."""
+
+    base_frame_path = core._find_articulation_root_path(ROBOT_PRIM_PATH)
+    operational = live_collision_geometry_containment_record(
+        recorder.stage,
+        collision_proxies,
+        robot_path=ROBOT_PRIM_PATH,
+        base_frame_path=base_frame_path,
+        dynamic_allowance=operational_limit_metres,
+    )
+    certificate = live_collision_geometry_containment_record(
+        recorder.stage,
+        collision_proxies,
+        robot_path=ROBOT_PRIM_PATH,
+        base_frame_path=base_frame_path,
+        dynamic_allowance=certificate_allowance_metres,
+    )
+    base_position, base_orientation = world_pose(robot)
+    reference_z = float(
+        route_certificate.get("config", {}).get("base_z")
+    )
+    maximum_radius = float(
+        route_certificate.get("execution_envelope", {}).get(
+            "maximum_robot_spatial_radius_metres"
+        )
+    )
+    operational_nonplanar = base_nonplanar_deviation_record(
+        position_z=float(base_position[2]),
+        orientation_wxyz=tuple(float(value) for value in base_orientation),
+        reference_z=reference_z,
+        maximum_robot_radius=maximum_radius,
+        tolerance=operational_limit_metres,
+    )
+    certificate_nonplanar = base_nonplanar_deviation_record(
+        position_z=float(base_position[2]),
+        orientation_wxyz=tuple(float(value) for value in base_orientation),
+        reference_z=reference_z,
+        maximum_robot_radius=maximum_radius,
+        tolerance=certificate_allowance_metres,
+    )
+
+    def combined_passed(
+        containment: dict[str, Any],
+        nonplanar: dict[str, Any],
+        allowance: float,
+    ) -> tuple[bool, float | None]:
+        components = (
+            containment.get("maximum_planar_escape_metres"),
+            containment.get("maximum_z_escape_metres"),
+            nonplanar.get("combined_escape_metres"),
+        )
+        if not all(
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(float(value))
+            for value in components
+        ):
+            return False, None
+        combined = max(
+            float(components[0]), float(components[1])
+        ) + float(components[2])
+        return bool(
+            containment.get("passed", False)
+            and nonplanar.get("passed", False)
+            and combined <= allowance + 1e-12
+        ), combined
+
+    operational_passed, operational_combined = combined_passed(
+        operational,
+        operational_nonplanar,
+        operational_limit_metres,
+    )
+    certificate_passed, certificate_combined = combined_passed(
+        certificate,
+        certificate_nonplanar,
+        certificate_allowance_metres,
+    )
+    return {
+        "phase": phase,
+        "classification": (
+            "pre_command_live_collision_geometry_authorization_gate"
+        ),
+        "passed": bool(
+            operational_passed
+            and certificate_passed
+            and certificate_allowance_metres - operational_limit_metres
+            >= 0.02
+        ),
+        "operational_limit_metres": operational_limit_metres,
+        "certificate_allowance_metres": certificate_allowance_metres,
+        "reaction_reserve_metres": (
+            certificate_allowance_metres - operational_limit_metres
+        ),
+        "operational_containment": operational,
+        "certificate_containment": certificate,
+        "operational_nonplanar_base": operational_nonplanar,
+        "certificate_nonplanar_base": certificate_nonplanar,
+        "operational_combined_world_escape_metres": (
+            operational_combined
+        ),
+        "certificate_combined_world_escape_metres": (
+            certificate_combined
+        ),
+        "pass_definition": (
+            "the exact captured collider/Boundable witness inventory "
+            "recaptures from current full USD transforms inside both the "
+            "smaller operational envelope and the full certificate allowance"
         ),
     }
 
@@ -2403,11 +3942,18 @@ def run_cup_gate(
             "Drive to the cup-aligned kitchen stance.",
         ),
     )
-    posture_gates, collision_proxies = prepare_navigation_posture(
-        recorder,
-        robot,
-        ik,
-    )
+    capture_label = "compact_navigation_stow"
+    if execute:
+        posture_gates, collision_proxies = prepare_navigation_posture(
+            recorder,
+            robot,
+            ik,
+        )
+    else:
+        capture_label = "current_asset_posture_no_command"
+        posture_gates, collision_proxies = capture_current_navigation_posture(
+            recorder
+        )
     gates.extend(posture_gates)
     if not posture_gates or not all(
         bool(gate.get("passed", False)) for gate in posture_gates
@@ -2422,12 +3968,17 @@ def run_cup_gate(
                 "coverage failed before route validation or any base command."
             ),
         )
+    certified_route = make_navigation_waypoints(
+        robot,
+        (route_target for _phase, route_target, _intent in route_waypoints),
+        target_yaw=nominal_yaw,
+    )
     preflight = validate_navigation_route(
         robot,
         collision_proxies,
-        (route_target for _phase, route_target, _intent in route_waypoints),
-        target_yaw=nominal_yaw,
+        certified_route,
         phase="cup_route_full_robot_preflight",
+        capture_label=capture_label,
     )
     gates.append(preflight)
     if not preflight["passed"]:
@@ -2438,6 +3989,31 @@ def run_cup_gate(
             recorder=recorder,
             reason=(
                 "Full-robot route preflight failed before any base command."
+            ),
+        )
+    live_authorization = live_geometry_authorization_gate(
+        recorder,
+        robot,
+        collision_proxies,
+        route_certificate=preflight["certificate"],
+        phase="cup_live_geometry_authorization",
+        operational_limit_metres=(
+            ARGS.dynamic_geometry_operational_limit_metres
+        ),
+        certificate_allowance_metres=(
+            ARGS.dynamic_geometry_certificate_allowance_metres
+        ),
+    )
+    gates.append(live_authorization)
+    if not live_authorization["passed"]:
+        return fail_closed_result(
+            gate_name=requested_gate_name,
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Live robot collider recapture failed before any base "
+                "command."
             ),
         )
     if not execute:
@@ -2454,20 +4030,32 @@ def run_cup_gate(
             "task_objects_before": before,
             "task_objects_after": after,
             "motion_scope": (
-                "arm articulation moved to the compact navigation posture; "
-                "no base, gripper, or task-object command was issued"
+                "read-only current-posture geometry and route validation; no "
+                "base, arm, gripper, or task-object command was issued"
             ),
             "official_stage_complete": False,
             "official_score": None,
         }
-    for route_phase, route_target, route_intent in route_waypoints:
+    for segment_index, (
+        route_phase,
+        _route_target,
+        route_intent,
+    ) in enumerate(route_waypoints):
         gate = drive_base_to(
             recorder,
             robot,
             steering_ids,
             drive_ids,
-            route_target,
-            nominal_yaw,
+            certified_waypoints=certified_route,
+            route_certificate=preflight["certificate"],
+            collision_proxies=collision_proxies,
+            dynamic_geometry_certificate_allowance_metres=(
+                ARGS.dynamic_geometry_certificate_allowance_metres
+            ),
+            dynamic_geometry_operational_limit_metres=(
+                ARGS.dynamic_geometry_operational_limit_metres
+            ),
+            segment_index=segment_index,
             max_steps=ARGS.base_max_steps,
             max_speed=ARGS.base_max_speed,
             max_accel=ARGS.base_max_accel,
@@ -2874,11 +4462,15 @@ def run_tray_gate(
                 "coverage failed before route validation or any base command."
             ),
         )
+    certified_route = make_navigation_waypoints(
+        robot,
+        (route_target for _phase, route_target in route_waypoints),
+        target_yaw=nominal_yaw,
+    )
     preflight = validate_navigation_route(
         robot,
         collision_proxies,
-        (route_target for _phase, route_target in route_waypoints),
-        target_yaw=nominal_yaw,
+        certified_route,
         phase="tray_route_full_robot_preflight",
     )
     gates.append(preflight)
@@ -2897,14 +4489,54 @@ def run_tray_gate(
                 "command."
             ),
         )
-    for route_phase, route_target in route_waypoints:
+    live_authorization = live_geometry_authorization_gate(
+        recorder,
+        robot,
+        collision_proxies,
+        route_certificate=preflight["certificate"],
+        phase="tray_live_geometry_authorization",
+        operational_limit_metres=(
+            ARGS.dynamic_geometry_operational_limit_metres
+        ),
+        certificate_allowance_metres=(
+            ARGS.dynamic_geometry_certificate_allowance_metres
+        ),
+    )
+    gates.append(live_authorization)
+    if not live_authorization["passed"]:
+        return fail_closed_result(
+            gate_name=(
+                "tray_bimanual_lift_and_transport"
+                if transport
+                else "tray_bimanual_lift"
+            ),
+            gates=gates,
+            before=before,
+            recorder=recorder,
+            reason=(
+                "Live robot collider recapture failed before any base "
+                "command."
+            ),
+        )
+    for segment_index, (
+        route_phase,
+        _route_target,
+    ) in enumerate(route_waypoints):
         gate = drive_base_to(
             recorder,
             robot,
             steering_ids,
             drive_ids,
-            route_target,
-            nominal_yaw,
+            certified_waypoints=certified_route,
+            route_certificate=preflight["certificate"],
+            collision_proxies=collision_proxies,
+            dynamic_geometry_certificate_allowance_metres=(
+                ARGS.dynamic_geometry_certificate_allowance_metres
+            ),
+            dynamic_geometry_operational_limit_metres=(
+                ARGS.dynamic_geometry_operational_limit_metres
+            ),
+            segment_index=segment_index,
             max_steps=ARGS.base_max_steps,
             max_speed=ARGS.base_max_speed,
             max_accel=ARGS.base_max_accel,
@@ -3153,14 +4785,206 @@ def run_tray_gate(
                 ),
             ),
         )
-        for route_phase, route_target in transport_waypoints:
+        recorder.set_phase(
+            "tray_loaded_collision_capture",
+            intent=(
+                "Recapture the extended robot, physically lifted tray, and "
+                "four dynamic payload objects before any loaded wheel command."
+            ),
+        )
+        loaded_capture_step = recorder.sim_step
+        attached_payload_roots = tuple(
+            recorder.object_paths[name]
+            for name in ("tray", *RULEBOOK_STAGE1_OBJECTS)
+        )
+        base_position_for_loaded_proxies, _ = world_pose(robot)
+        loaded_root_path = core._find_articulation_root_path(
+            ROBOT_PRIM_PATH
+        )
+        try:
+            loaded_collision_proxies = extract_collision_proxy_set(
+                recorder.stage,
+                robot_path=ROBOT_PRIM_PATH,
+                base_frame_path=loaded_root_path,
+                base_world_z=float(base_position_for_loaded_proxies[2]),
+                attached_payload_root_paths=attached_payload_roots,
+            )
+        except Exception as error:  # noqa: BLE001
+            loaded_collision_proxies = CollisionProxySet(
+                robot=(),
+                environment=(),
+                support_surface_paths=(),
+                candidate_robot_paths=(),
+                candidate_environment_paths=(),
+                unresolved_paths=(
+                    f"loaded extractor [{type(error).__name__}: {error}]",
+                ),
+                traversal_backend="failed",
+                attached_payload_root_paths=attached_payload_roots,
+            )
+        loaded_coverage_gate = {
+            "phase": "tray_loaded_collision_proxy_coverage",
+            "classification": (
+                "post_lift_loaded_compound_enabled_collider_coverage_gate"
+            ),
+            "capture_sim_step": loaded_capture_step,
+            "passed": loaded_collision_proxies.complete,
+            "loaded_proxy_coverage": collision_proxy_coverage_summary(
+                loaded_collision_proxies,
+                capture_label=(
+                    "post_lift_extended_arms_with_tray_and_four_objects"
+                ),
+            ),
+            "collision_proxy_inventory": (
+                loaded_collision_proxies.record()
+            ),
+            "pass_definition": (
+                "every enabled robot, tray, payload, and environment collider "
+                "is represented, with every requested attached payload root "
+                "present in the robot-relative compound geometry"
+            ),
+        }
+        gates.append(loaded_coverage_gate)
+        if not loaded_coverage_gate["passed"]:
+            return fail_closed_result(
+                gate_name="tray_bimanual_lift_and_transport",
+                gates=gates,
+                before=before,
+                recorder=recorder,
+                reason=(
+                    "Loaded tray/payload collider coverage failed before any "
+                    "loaded base command."
+                ),
+            )
+        try:
+            loaded_payload_reference = payload_positions_in_base_frame(
+                recorder,
+                robot,
+                ("tray", *RULEBOOK_STAGE1_OBJECTS),
+            )
+        except Exception as error:  # noqa: BLE001
+            gates.append(
+                {
+                    "phase": "tray_loaded_payload_reference",
+                    "capture_sim_step": loaded_capture_step,
+                    "classification": (
+                        "loaded_payload_to_base_reference_gate"
+                    ),
+                    "passed": False,
+                    "reason": f"{type(error).__name__}: {error}",
+                }
+            )
+            return fail_closed_result(
+                gate_name="tray_bimanual_lift_and_transport",
+                gates=gates,
+                before=before,
+                recorder=recorder,
+                reason=(
+                    "Loaded payload-to-base reference capture failed before "
+                    "any loaded base command."
+                ),
+            )
+        gates.append(
+            {
+                "phase": "tray_loaded_payload_reference",
+                "capture_sim_step": loaded_capture_step,
+                "classification": (
+                    "loaded_payload_to_base_reference_gate"
+                ),
+                "passed": True,
+                "payload_reference_by_name": {
+                    name: rounded(values)
+                    for name, values in sorted(
+                        loaded_payload_reference.items()
+                    )
+                },
+                "reserved_drift_metres": (
+                    ARGS.tray_payload_envelope_metres
+                ),
+            }
+        )
+        loaded_certified_route = make_navigation_waypoints(
+            robot,
+            (
+                route_target
+                for _phase, route_target in transport_waypoints
+            ),
+            target_yaw=nominal_yaw,
+        )
+        loaded_preflight = validate_navigation_route(
+            robot,
+            loaded_collision_proxies,
+            loaded_certified_route,
+            phase="tray_loaded_return_route_preflight",
+            capture_label=(
+                "post_lift_extended_arms_with_tray_and_four_objects"
+            ),
+            geometry_deformation_allowance_metres=(
+                ARGS.tray_payload_envelope_metres
+            ),
+        )
+        loaded_preflight["capture_sim_step"] = loaded_capture_step
+        loaded_preflight["authorization_sim_step"] = recorder.sim_step
+        loaded_preflight["loaded_geometry_model"] = (
+            "post-lift compound proxy plus reserved payload deformation "
+            "allowance; runtime payload-to-base drift is checked separately"
+        )
+        gates.append(loaded_preflight)
+        if not loaded_preflight["passed"]:
+            return fail_closed_result(
+                gate_name="tray_bimanual_lift_and_transport",
+                gates=gates,
+                before=before,
+                recorder=recorder,
+                reason=(
+                    "Loaded tray return-route preflight failed before any "
+                    "loaded base command."
+                ),
+            )
+        loaded_live_authorization = live_geometry_authorization_gate(
+            recorder,
+            robot,
+            loaded_collision_proxies,
+            route_certificate=loaded_preflight["certificate"],
+            phase="tray_loaded_live_geometry_authorization",
+            operational_limit_metres=(
+                ARGS.tray_payload_operational_limit_metres
+            ),
+            certificate_allowance_metres=(
+                ARGS.tray_payload_envelope_metres
+            ),
+        )
+        gates.append(loaded_live_authorization)
+        if not loaded_live_authorization["passed"]:
+            return fail_closed_result(
+                gate_name="tray_bimanual_lift_and_transport",
+                gates=gates,
+                before=before,
+                recorder=recorder,
+                reason=(
+                    "Live loaded robot/payload collider recapture failed "
+                    "before any loaded base command."
+                ),
+            )
+        for segment_index, (
+            route_phase,
+            _route_target,
+        ) in enumerate(transport_waypoints):
             gate = drive_base_to(
                 recorder,
                 robot,
                 steering_ids,
                 drive_ids,
-                route_target,
-                nominal_yaw,
+                certified_waypoints=loaded_certified_route,
+                route_certificate=loaded_preflight["certificate"],
+                collision_proxies=loaded_collision_proxies,
+                dynamic_geometry_certificate_allowance_metres=(
+                    ARGS.tray_payload_envelope_metres
+                ),
+                dynamic_geometry_operational_limit_metres=(
+                    ARGS.tray_payload_operational_limit_metres
+                ),
+                segment_index=segment_index,
                 max_steps=ARGS.base_max_steps,
                 max_speed=ARGS.transport_max_speed,
                 max_accel=ARGS.transport_max_accel,
@@ -3168,6 +4992,10 @@ def run_tray_gate(
                 intent=(
                     "Slowly transport the physically grasped dynamic tray "
                     "through the measured doorway clearance toward dining."
+                ),
+                payload_reference_by_name=loaded_payload_reference,
+                payload_drift_tolerance_metres=(
+                    ARGS.tray_payload_envelope_metres
                 ),
             )
             gate["route_source"] = (
@@ -3259,6 +5087,11 @@ def run_tray_gate(
 
 
 def validate_arguments() -> None:
+    if ARGS.render:
+        raise ValueError(
+            "--render is not supported by the fail-closed Stage 1 controller "
+            "until every batched physics substep can be monitored"
+        )
     integer_bounds = {
         "--trace-hz": (ARGS.trace_hz, 1, 120),
         "--settle-steps": (ARGS.settle_steps, 1, 2400),
@@ -3305,10 +5138,20 @@ def validate_arguments() -> None:
             100.0,
         ),
         "--arm-effort-abort": (ARGS.arm_effort_abort, 20.0, 250.0),
-        "--arm-max-target-step-rad": (
-            ARGS.arm_max_target_step_rad,
+        "--arm-max-command-slew-rad": (
+            ARGS.arm_max_command_slew_rad,
             0.001,
             0.20,
+        ),
+        "--arm-tracking-error-threshold-rad": (
+            ARGS.arm_tracking_error_threshold_rad,
+            0.02,
+            0.50,
+        ),
+        "--arm-tracking-error-dwell-seconds": (
+            ARGS.arm_tracking_error_dwell_seconds,
+            0.05,
+            2.0,
         ),
         "--base-stall-seconds": (ARGS.base_stall_seconds, 0.25, 3.0),
         "--base-stall-grace-seconds": (
@@ -3348,8 +5191,33 @@ def validate_arguments() -> None:
         ),
         "--route-cross-track-tolerance": (
             ARGS.route_cross_track_tolerance,
-            0.04,
+            0.01,
+            0.10,
+        ),
+        "--route-operational-cross-track-tolerance": (
+            ARGS.route_operational_cross_track_tolerance,
+            0.0,
+            0.08,
+        ),
+        "--route-yaw-tracking-tolerance-deg": (
+            ARGS.route_yaw_tracking_tolerance_deg,
             0.25,
+            5.0,
+        ),
+        "--route-operational-yaw-tolerance-deg": (
+            ARGS.route_operational_yaw_tolerance_deg,
+            0.0,
+            4.0,
+        ),
+        "--dynamic-geometry-certificate-allowance-metres": (
+            ARGS.dynamic_geometry_certificate_allowance_metres,
+            0.04,
+            0.20,
+        ),
+        "--dynamic-geometry-operational-limit-metres": (
+            ARGS.dynamic_geometry_operational_limit_metres,
+            0.0,
+            0.15,
         ),
         "--navigation-stow-height": (
             ARGS.navigation_stow_height,
@@ -3378,6 +5246,16 @@ def validate_arguments() -> None:
             0.25,
         ),
         "--tray-lift-height": (ARGS.tray_lift_height, 0.07, 0.30),
+        "--tray-payload-envelope-metres": (
+            ARGS.tray_payload_envelope_metres,
+            0.05,
+            0.30,
+        ),
+        "--tray-payload-operational-limit-metres": (
+            ARGS.tray_payload_operational_limit_metres,
+            0.0,
+            0.25,
+        ),
     }
     for name, (value, minimum, maximum) in bounded_fields.items():
         if not math.isfinite(value) or not minimum <= value <= maximum:
@@ -3389,6 +5267,42 @@ def validate_arguments() -> None:
     ):
         raise ValueError(
             "--base-min-speed must not exceed either base speed cap"
+        )
+    if (
+        ARGS.route_cross_track_tolerance
+        - ARGS.route_operational_cross_track_tolerance
+        < 0.01
+    ):
+        raise ValueError(
+            "route certificate cross-track tolerance must exceed the "
+            "operational limit by at least 0.01m"
+        )
+    if (
+        ARGS.route_yaw_tracking_tolerance_deg
+        - ARGS.route_operational_yaw_tolerance_deg
+        < 0.5
+    ):
+        raise ValueError(
+            "route certificate yaw tolerance must exceed the operational "
+            "limit by at least 0.5 degrees"
+        )
+    dynamic_allowance_gap = (
+        ARGS.dynamic_geometry_certificate_allowance_metres
+        - ARGS.dynamic_geometry_operational_limit_metres
+    )
+    if dynamic_allowance_gap < 0.02:
+        raise ValueError(
+            "dynamic geometry certificate allowance must exceed the "
+            "operational limit by at least 0.02m"
+        )
+    loaded_allowance_gap = (
+        ARGS.tray_payload_envelope_metres
+        - ARGS.tray_payload_operational_limit_metres
+    )
+    if loaded_allowance_gap < 0.02:
+        raise ValueError(
+            "tray payload envelope must exceed its operational limit by "
+            "at least 0.02m"
         )
     geometry_bounds = {
         "--cup-grasp-z-offset": (
@@ -3448,14 +5362,92 @@ def build_provenance(
     robot_path: Path,
     configured_robot_position: Iterable[float],
     configured_robot_yaw: float,
+    mutation_guard: dict[str, Any],
+    authenticated_upstream_helpers: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
+    executed_sources = [
+        {
+            **record,
+            "repository_path": f"participant/{record['path']}",
+            "runtime_path": str(script_path.parent / str(record["path"])),
+        }
+        for record in mutation_guard["sources"]
+    ]
+    entrypoint_path = Path(
+        os.environ.get(
+            "AIRSIGN_ENTRYPOINT_PATH",
+            "/usr/local/bin/airsign",
+        )
+    ).resolve()
+    if not entrypoint_path.is_file():
+        raise RuntimeError(
+            f"AirSign runtime entrypoint is missing: {entrypoint_path}"
+        )
+    executed_sources.append(
+        {
+            "path": "airsign",
+            "repository_path": "scripts/airsign",
+            "runtime_path": str(entrypoint_path),
+            "bytes": entrypoint_path.stat().st_size,
+            "sha256": sha256_file(entrypoint_path),
+            "ast_call_count": None,
+        }
+    )
+    for data_name in AIRSIGN_RUNTIME_DATA_NAMES:
+        data_path = (script_path.parent / data_name).resolve()
+        if not data_path.is_file():
+            raise RuntimeError(
+                f"AirSign runtime provenance data is missing: {data_path}"
+            )
+        executed_sources.append(
+            {
+                "path": data_name,
+                "repository_path": f"participant/{data_name}",
+                "runtime_path": str(data_path),
+                "bytes": data_path.stat().st_size,
+                "sha256": sha256_file(data_path),
+                "ast_call_count": None,
+            }
+        )
+    source_set_records = sorted(
+        (
+            {
+                "repository_path": record["repository_path"],
+                "bytes": record["bytes"],
+                "sha256": record["sha256"],
+            }
+            for record in executed_sources
+        ),
+        key=lambda record: str(record["repository_path"]),
+    )
+    source_set_sha256 = hashlib.sha256(
+        json.dumps(
+            source_set_records,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
     return {
+        "airsign_repository": (
+            "https://github.com/EvergreenTree/AirSignRobot"
+        ),
+        "airsign_source_revision": os.environ.get(
+            "AIRSIGN_REVISION",
+            "unavailable",
+        ),
         "official_benchmark_commit": os.environ.get(
             "EBIM_BENCHMARK_COMMIT",
             os.environ.get("EBIM_COMMIT", git_revision(REPO_ROOT)),
         ),
         "controller_sha256": sha256_file(script_path),
         "controller_path_in_runtime": str(script_path),
+        "source_set_sha256": source_set_sha256,
+        "python_source_set_sha256": mutation_guard[
+            "source_set_sha256"
+        ],
+        "executed_sources": executed_sources,
+        "direct_upstream_helpers": authenticated_upstream_helpers,
         "simulator": "Isaac Sim 5.1.0",
         "container_image": os.environ.get(
             "AIRSIGN_CAPTURE_CONTAINER_IMAGE",
@@ -3463,6 +5455,9 @@ def build_provenance(
         ),
         "container_image_id": os.environ.get(
             "AIRSIGN_CAPTURE_CONTAINER_IMAGE_ID", "unavailable"
+        ),
+        "container_repo_digest": os.environ.get(
+            "AIRSIGN_CAPTURE_CONTAINER_REPO_DIGEST"
         ),
         "python": platform.python_version(),
         "head_placement": ARGS.head_placement,
@@ -3504,12 +5499,17 @@ def write_evidence(
         bool(result["passed"]) for result in physical_results
     )
     trace = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "airsign_ebim_track3_stage1_physical_gate_trace",
         "classification": "measured_physical_development_evidence",
         "coordinate_frame": "official_isaac_world_metres_z_up",
         "task_objects_teleported": False,
         "robot_links_teleported": False,
+        "robot_link_initialization_boundary": (
+            "Isaac World.reset applied the asset default before evidence "
+            "recording; the ready-pose setup helper and set_joint_positions "
+            "were not used"
+        ),
         "task_object_mutation_api_used": False,
         "official_stage_completion_claimed": False,
         "official_score_claimed": False,
@@ -3519,7 +5519,7 @@ def write_evidence(
         "provenance": provenance,
     }
     metrics = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "airsign_ebim_track3_stage1_physical_gate_metrics",
         "classification": "participant_physical_development_gate",
         "gate_requested": ARGS.gate,
@@ -3579,9 +5579,24 @@ def write_evidence(
         + "\n",
         encoding="utf-8",
     )
+    canonical_provenance = json.dumps(
+        provenance,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "controller_sha256": provenance["controller_sha256"],
+        "source_set_sha256": provenance["source_set_sha256"],
+        "airsign_source_revision": provenance[
+            "airsign_source_revision"
+        ],
+        "container_image_id": provenance["container_image_id"],
+        "provenance_sha256": hashlib.sha256(
+            canonical_provenance.encode("utf-8")
+        ).hexdigest(),
+        "provenance": provenance,
         "official_benchmark_commit": provenance[
             "official_benchmark_commit"
         ],
@@ -3620,6 +5635,7 @@ def main() -> bool:
     started_wall = time.time()
     script_path = Path(__file__).resolve()
     mutation_guard = enforce_mutation_guard(script_path)
+    authenticated_upstream_helpers = direct_upstream_helper_records()
     target_provider = load_target_provider(ARGS.targets_json)
     room_path = Path(ARGS.room_usd).expanduser()
     robot_path = Path(ARGS.robot_usd).expanduser()
@@ -3628,11 +5644,6 @@ def main() -> bool:
             f"Missing room or robot asset: {room_path}, {robot_path}"
         )
     output_dir = ARGS.output_dir.expanduser().resolve()
-    groups = core._load_joint_groups(
-        Path(ARGS.franka_root).expanduser(),
-        ARGS.embodiment,
-        include_browser_commands=False,
-    )
     ARGS.task = "task3"
     robot_position = room_scene.resolve_robot_position(ARGS)
     robot_yaw = room_scene.resolve_robot_yaw(ARGS)
@@ -3669,14 +5680,13 @@ def main() -> bool:
     )
     world.scene.add(robot)
     world.reset()
-    (
-        _group_indices,
-        _coupled_indices,
-        steering_ids,
-        drive_ids,
-        _spine_keyboard_controller,
-        _arm_keyboard_teleop,
-    ) = core.setup_robot_control(robot, groups, ARGS)
+    # Do not call setup_robot_control(): the pinned official helper invokes
+    # set_joint_positions() to teleport a ready pose.  Keep the initialized
+    # asset state and use only measured, guarded articulation targets after the
+    # evidence recorder starts.
+    steering_ids, drive_ids = core._find_drive_joint_ids(
+        list(robot.dof_names)
+    )
     for _ in range(ARGS.settle_steps):
         world.step(render=ARGS.render)
     drivers = discover_gripper_drivers(robot)
@@ -3701,13 +5711,35 @@ def main() -> bool:
     stage = omni.usd.get_context().get_stage()
     if stage is None:
         raise RuntimeError("No USD stage available")
-    object_paths = {
+    object_asset_root_paths = {
         name: find_prim_path(stage, source_name)
         for name, source_name in TASK_OBJECT_NAMES.items()
     }
+    dynamic_body_resolution = {
+        name: resolve_enabled_dynamic_rigid_body_descendant(stage, path)
+        for name, path in object_asset_root_paths.items()
+    }
+    failed_body_resolution = {
+        name: record
+        for name, record in dynamic_body_resolution.items()
+        if not bool(record.get("passed", False))
+    }
+    if failed_body_resolution:
+        raise RuntimeError(
+            "Task-object dynamic rigid-body resolution failed closed: "
+            + json.dumps(failed_body_resolution, sort_keys=True)
+        )
+    object_paths = {
+        name: str(record["dynamic_rigid_body_path"])
+        for name, record in dynamic_body_resolution.items()
+    }
     rigid_bodies = {
-        name: rigid_body_record(stage, path)
-        for name, path in object_paths.items()
+        name: {
+            **rigid_body_record(stage, object_asset_root_paths[name]),
+            "selected_dynamic_rigid_body_path": object_paths[name],
+            "selection": dynamic_body_resolution[name],
+        }
+        for name in object_asset_root_paths
     }
     environment_inventory = environment_top_level_inventory(stage)
     collision_inventory = collision_prim_inventory(stage)
@@ -3815,6 +5847,8 @@ def main() -> bool:
         robot_path,
         robot_position,
         robot_yaw,
+        mutation_guard,
+        authenticated_upstream_helpers,
     )
     result = write_evidence(
         output_dir,

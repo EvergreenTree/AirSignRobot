@@ -11,7 +11,8 @@ expected_room_sha256="${ROOM_ASSET_SHA256:-696c71577f1874d815fe29c6a58c65f0f1a0a
 expected_asset_sha256="${ROBOT_ASSET_SHA256:-aa1a833de48cc543c73957461dab82fe0979320b7c0b6a0a113d24b500075e5c}"
 log_dir="${AIRSIGN_LOG_DIR:-/tmp/airsign}"
 isaac_python="${AIRSIGN_PYTHON:-/isaac-sim/python.sh}"
-revision_file="${AIRSIGN_REVISION_FILE:-/opt/airsign/benchmark-commit}"
+benchmark_revision_file="${EBIM_REVISION_FILE:-/opt/airsign/benchmark-commit}"
+source_revision_file="${AIRSIGN_REVISION_FILE:-/opt/airsign/source-revision}"
 
 usage() {
   cat <<'EOF'
@@ -45,7 +46,7 @@ EOF
 }
 
 verify_image() {
-  local actual_commit actual_room_sha256 actual_asset_sha256
+  local actual_commit actual_room_sha256 actual_asset_sha256 actual_source_revision
   test -x "${isaac_python}"
   test -d "${ebim_root}/task3_isaacsim"
   test -f "${room_path}"
@@ -55,13 +56,14 @@ verify_image() {
   test -f "${solution_root}/isaac_collision_geometry.py"
   test -f "${solution_root}/joint_command_guard.py"
   test -f "${solution_root}/se2_route_validator.py"
+  test -f "${solution_root}/executable_provenance.py"
   test -f "${solution_root}/stage1_table_setup.py"
   test -f "${solution_root}/four_stage_rehearsal.py"
   test -f "${solution_root}/validate_four_stage_replay.py"
   test -f "${asset_path}"
 
-  if [[ -f "${revision_file}" ]]; then
-    actual_commit="$(tr -d '[:space:]' < "${revision_file}")"
+  if [[ -f "${benchmark_revision_file}" ]]; then
+    actual_commit="$(tr -d '[:space:]' < "${benchmark_revision_file}")"
   elif command -v git >/dev/null 2>&1; then
     actual_commit="$(git -C "${ebim_root}" rev-parse HEAD)"
   else
@@ -70,6 +72,21 @@ verify_image() {
   fi
   if [[ "${actual_commit}" != "${expected_commit}" ]]; then
     echo "Official benchmark revision mismatch: ${actual_commit}" >&2
+    return 1
+  fi
+
+  if [[ ! -f "${source_revision_file}" ]]; then
+    echo "No AirSign source revision stamp is available." >&2
+    return 1
+  fi
+  actual_source_revision="$(tr -d '[:space:]' < "${source_revision_file}")"
+  if [[ -z "${actual_source_revision}" ]]; then
+    echo "AirSign source revision stamp is empty." >&2
+    return 1
+  fi
+  if [[ -n "${AIRSIGN_REVISION:-}" ]] \
+      && [[ "${actual_source_revision}" != "${AIRSIGN_REVISION}" ]]; then
+    echo "AirSign source revision mismatch: ${actual_source_revision}" >&2
     return 1
   fi
 
@@ -91,6 +108,7 @@ verify_image() {
       "${solution_root}/isaac_collision_geometry.py" \
       "${solution_root}/joint_command_guard.py" \
       "${solution_root}/se2_route_validator.py" \
+      "${solution_root}/executable_provenance.py" \
       "${solution_root}/stage1_table_setup.py" \
       "${solution_root}/four_stage_rehearsal.py" \
       "${solution_root}/validate_four_stage_replay.py" <<'PY'
@@ -146,7 +164,8 @@ shift || true
 case "${command}" in
   smoke)
     verify_image
-    echo "AIRSIGN_SMOKE_RESULT {\"passed\":true,\"benchmark_commit\":\"${expected_commit}\",\"robot_profile\":\"robotiq\",\"simulator\":\"Isaac Sim 5.1.0\"}"
+    source_revision="$(tr -d '[:space:]' < "${source_revision_file}")"
+    echo "AIRSIGN_SMOKE_RESULT {\"passed\":true,\"airsign_revision\":\"${source_revision}\",\"benchmark_commit\":\"${expected_commit}\",\"robot_profile\":\"robotiq\",\"simulator\":\"Isaac Sim 5.1.0\"}"
     ;;
   participant)
     run_probe \
