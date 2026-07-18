@@ -21,17 +21,26 @@ Usage:
   airsign smoke
   airsign participant [controller options]
   airsign gripper-gate [controller options]
+  airsign stage1-table-setup [controller options]
+  airsign four-stage-rehearsal [controller options]
+  airsign validate-replay DIRECTORY
   airsign shell [command ...]
 
 Commands:
   smoke         Static, GPU-free image and source-integrity checks.
   participant   Run the actuator-driven dual-arm and mobile-base workload.
   gripper-gate  Run the Robotiq open/close/open and scene-inventory gate.
+  stage1-table-setup
+                Run physical cup or tray Stage 1 development gates.
+  four-stage-rehearsal
+                Record a truth-bounded four-stage actuator replay.
+  validate-replay
+                Validate replay schema, hashes, and claim boundaries.
   shell         Open a shell, or execute the supplied command.
   help          Show this message.
 
-The participant and gripper-gate commands are component-validation workloads.
-They do not claim an official EBiM stage completion or benchmark score.
+The participant, gripper-gate, and stage1-table-setup commands are development
+workloads. They do not claim an official EBiM stage completion or score.
 EOF
 }
 
@@ -42,6 +51,9 @@ verify_image() {
   test -f "${room_path}"
   test -f "${solution_root}/autonomous_probe.py"
   test -f "${solution_root}/gripper_scene_gate2.py"
+  test -f "${solution_root}/stage1_table_setup.py"
+  test -f "${solution_root}/four_stage_rehearsal.py"
+  test -f "${solution_root}/validate_four_stage_replay.py"
   test -f "${asset_path}"
 
   if [[ -f "${revision_file}" ]]; then
@@ -70,7 +82,10 @@ verify_image() {
   fi
 
   "${isaac_python}" - "${solution_root}/autonomous_probe.py" \
-      "${solution_root}/gripper_scene_gate2.py" <<'PY'
+      "${solution_root}/gripper_scene_gate2.py" \
+      "${solution_root}/stage1_table_setup.py" \
+      "${solution_root}/four_stage_rehearsal.py" \
+      "${solution_root}/validate_four_stage_replay.py" <<'PY'
 from pathlib import Path
 import sys
 
@@ -138,6 +153,29 @@ case "${command}" in
       "GRIPPER_SCENE_GATE2_RESULT" \
       "${solution_root}/gripper_scene_gate2.py" \
       "$@"
+    ;;
+  stage1-table-setup)
+    run_probe \
+      "stage1-table-setup" \
+      "STAGE1_TABLE_SETUP_RESULT" \
+      "${solution_root}/stage1_table_setup.py" \
+      "$@"
+    ;;
+  four-stage-rehearsal)
+    run_probe \
+      "four-stage-rehearsal" \
+      "FOUR_STAGE_REHEARSAL_RESULT" \
+      "${solution_root}/four_stage_rehearsal.py" \
+      "$@"
+    ;;
+  validate-replay)
+    if [[ "$#" -ne 1 ]]; then
+      echo "validate-replay requires exactly one evidence directory." >&2
+      exit 2
+    fi
+    exec "${isaac_python}" \
+      "${solution_root}/validate_four_stage_replay.py" \
+      "$1"
     ;;
   shell)
     if [[ "$#" -gt 0 ]]; then

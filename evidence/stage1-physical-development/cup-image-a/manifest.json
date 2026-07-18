@@ -1,0 +1,15 @@
+{
+  "controller_sha256": "973108ebe0812661b6b1bf493105196b22dfca074b3f06d78cc1cb0c21d41ec6",
+  "files": {
+    "metrics.json": {
+      "bytes": 87996,
+      "sha256": "377704130b136c92005af1d93f7579f0adc17742860fc29551f93552c6ca683c"
+    },
+    "trajectory.json": {
+      "bytes": 699960,
+      "sha256": "0103021d3ae3e5d7772030bf12d497614264ed528d0c74284a5f4fc03a4320e7"
+    }
+  },
+  "official_benchmark_commit": "cb5184574f33611f943ff42aae461678ccb538e9",
+  "schema_version": 1
+}

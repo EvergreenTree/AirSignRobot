@@ -81,6 +81,9 @@ COPY README.md LICENSE NOTICE /opt/airsign/
 RUN chmod 0755 /usr/local/bin/airsign \
     "${EBIM_ROOT}/ebim-track3-solution/autonomous_probe.py" \
     "${EBIM_ROOT}/ebim-track3-solution/gripper_scene_gate2.py" \
+    "${EBIM_ROOT}/ebim-track3-solution/stage1_table_setup.py" \
+    "${EBIM_ROOT}/ebim-track3-solution/four_stage_rehearsal.py" \
+    "${EBIM_ROOT}/ebim-track3-solution/validate_four_stage_replay.py" \
     && mkdir -p \
         /isaac-sim/.cache \
         /isaac-sim/.nvidia-omniverse/config \
