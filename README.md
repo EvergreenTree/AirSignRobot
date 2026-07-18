@@ -6,10 +6,12 @@
 
 **Submission repository:** <https://github.com/EvergreenTree/AirSignRobot>
 
+**Interactive judge demo:** [Mobile FR3 Duo four-stage viewer](https://airsign-ebim-track3.chattytransformer.chatgpt.site/)
+
 This repository is the Docker submission contract for AirSign's actuator-driven
 Task 3 work. The image pins the exact official benchmark snapshot and Robotiq
 robot asset used during validation, then exposes a GPU-free image smoke test and
-three headless Isaac Sim participant workloads.
+four headless Isaac Sim participant workloads.
 
 > **Evidence boundary:** the included workloads validate dual-arm IK,
 > articulation-driven Robotiq motion, closed-loop mobile-base control, and a
@@ -17,6 +19,41 @@ three headless Isaac Sim participant workloads.
 > or bean outcomes, so it is not an official four-stage completion and this
 > repository makes no benchmark-score claim. The official rulebook score is 16
 > points; the repository's 18-point development grader is non-authoritative.
+
+## Judge quickstart
+
+The demo separates recorded, measured actuator clips and logs from a synthetic
+interactive 3D design visualization. Neither is rulebook task-outcome evidence.
+The canonical machine-readable actuator record is
+[`evidence/four-stage-rehearsal/`](evidence/four-stage-rehearsal/).
+
+| Review question | Current, verifiable answer |
+|---|---|
+| Robot and environment | Mobile FR3 Duo with Robotiq 2F-85 in the pinned official Task 3 room |
+| Canonical measured result | Navigation, IK, Robotiq, and hold gates passed across four rehearsal intents |
+| Rulebook object outcomes | Not established; maximum measured task-object displacement was `0.0 m` |
+| Official stage completion claimed | No |
+| Official benchmark score claimed | No — `benchmark_score` is `null` |
+| Official maximum | 16 points |
+
+Run the complete CPU-only repository check—no Docker, NGC login, GPU, or cloud
+credential is needed:
+
+```bash
+python3 scripts/validate_submission.py
+```
+
+Expected final record:
+
+```text
+AIRSIGN_SUBMISSION_CHECK {"checks_passed": 9, "failures": [], "passed": true}
+```
+
+This verifies controller syntax, the canonical replay schema and hashes,
+evidence claim boundaries, Stage 1 diagnostic manifests and detached exits,
+controller provenance, Dockerfile packaging guards, the read-only CI contract,
+and recognizable credential patterns. For a container-level review, continue
+with the build and smoke test below.
 
 ## Reproducibility lock
 
@@ -42,6 +79,13 @@ warnings. The scored Task 3 objects and logical regions still load, and both
 packaged component gates pass, but a full four-stage run has not been validated
 against this incomplete upstream scene. This image does not substitute
 unverified third-party geometry.
+
+The upstream
+[`STATUS.md`](https://github.com/EBiM-Benchmark/benchmark/blob/cb5184574f33611f943ff42aae461678ccb538e9/STATUS.md)
+at this exact revision also describes Task 3 as a runnable preview and leaves
+force-limited grasping and a full four-stage run unverified. Accordingly, this
+submission treats the included grading helpers as development aids and does not
+infer an official score from them.
 
 ## Requirements
 
@@ -136,6 +180,44 @@ commands an open → closed → open sequence only through articulation actions,
 and reads the task-object and logical-region inventory without mutating it.
 Success ends with `GRIPPER_SCENE_GATE2_RESULT` containing `"passed": true`.
 
+### Physical Stage 1 development gate
+
+Run the fail-closed, articulation-only Table Setup development controller:
+
+```bash
+mkdir -p stage1-output
+docker run --rm \
+  --gpus all \
+  --network host \
+  --ipc host \
+  --shm-size=8g \
+  -v "$PWD/stage1-output:/stage1-output" \
+  airsignrobot:task3 \
+  stage1-table-setup \
+  --gate cup \
+  --output-dir /stage1-output \
+  --head-placement A
+```
+
+Available gates are `inspect`, `cup`, `tray-lift`, `tray-transport`, and `all`.
+The controller constructs the pinned official scene, commands only robot
+articulation degrees of freedom, records task-object poses read-only, and exits
+nonzero when a navigation, IK, joint-effort, or physical-outcome gate fails. It
+writes `trajectory.json`, `metrics.json`, and `manifest.json` with controller,
+scene, and image provenance.
+
+The tray gates are payload-stability experiments only. The tray is not one of
+the four scored Stage 1 objects and a tray-gate pass is not a rulebook
+placement.
+
+This is explicitly a development workload. The public benchmark snapshot does
+not expose the organizer's randomized Stage 1 target-provider or live scorer
+contract, so even a passing grasp, lift, release, or transport gate keeps
+`official_stage_complete: false` and `official_stage_score: null`.
+The retained exact-entrypoint diagnostics are indexed under
+[`evidence/stage1-physical-development/`](evidence/stage1-physical-development/);
+both fail before manipulation and are labeled non-canonical.
+
 ### Four-stage browser replay
 
 Record a deterministic actuator rehearsal covering the intent and motion phases
@@ -184,6 +266,7 @@ hold waypoints were reached. It does not mean tableware or beans moved.
 | `smoke` | No | Integrity and syntax checks; this is the default |
 | `participant [options]` | Yes | Dual-arm IK plus closed-loop base workload |
 | `gripper-gate [options]` | Yes | Robotiq articulation and read-only scene gate |
+| `stage1-table-setup [options]` | Yes | Physical Stage 1 development gates; no official score claim |
 | `four-stage-rehearsal [options]` | Yes | Four-stage actuator trace; no outcome claim |
 | `validate-replay DIRECTORY` | No | Validate replay schema, hashes, and claim boundary |
 | `shell [command ...]` | Depends | Debug shell or explicit command |
@@ -202,15 +285,23 @@ docker run --rm --gpus all --shm-size=8g \
 
 ## Evidence and scoring strategy
 
-Machine-readable records from the validated GCP run are in [`evidence/`](evidence/).
-Each file explicitly distinguishes participant component validation from the
-official benchmark score.
+Machine-readable records from the validated GCP run are indexed in
+[`evidence/`](evidence/). Judges should start with the canonical
+[`four-stage-rehearsal`](evidence/four-stage-rehearsal/) bundle; supporting
+component checks and clearly separated failed
+[`Stage 1 physical-development diagnostics`](evidence/stage1-physical-development/)
+are retained for traceability. Every score-bearing record distinguishes
+participant component validation from the official benchmark score.
 
-The implementation order follows the official lexicographic ranking:
+Research is designed backward from the Stage 4 end state, then executed and
+verified forward in the rulebook order:
 
-1. maximize the highest completed stage;
-2. maximize the official total out of 16;
-3. reduce completion time only after reliability.
+1. establish physical grasp, transport, release, and official predicates for
+   Stage 1;
+2. validate loaded-spoon dwell and return for Stage 2;
+3. validate particle recovery and mass measurement for Stage 3;
+4. validate contact-driven sink placements for Stage 4;
+5. optimize completion time only after reliable continuous Stage 1 → 4 runs.
 
 The official four-stage target is table setup, feeding with a three-second
 hold, bean recovery, and cleanup. The supplied development integration check

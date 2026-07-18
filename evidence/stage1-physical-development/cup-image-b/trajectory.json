@@ -1,0 +1,6366 @@
+{
+  "benchmark_score": null,
+  "classification": "measured_physical_development_evidence",
+  "coordinate_frame": "official_isaac_world_metres_z_up",
+  "events": [
+    {
+      "intent": "Record settled official public Task 3 scene state.",
+      "intent_is_measured_outcome": false,
+      "phase": "initial_state",
+      "simulation_step": 0,
+      "time_seconds": 0.0
+    },
+    {
+      "intent": "Move north into the measured table-to-wall clearance strip.",
+      "intent_is_measured_outcome": false,
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 0,
+      "time_seconds": 0.0
+    },
+    {
+      "intent": "Traverse north of the dining table toward its east corridor.",
+      "intent_is_measured_outcome": false,
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 655,
+      "time_seconds": 2.729167
+    },
+    {
+      "intent": "Record final measured articulation and task-object state.",
+      "intent_is_measured_outcome": false,
+      "phase": "final_state",
+      "simulation_step": 1165,
+      "time_seconds": 4.854167
+    }
+  ],
+  "frames": [
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706602,
+          -0.0,
+          1e-06,
+          0.707611
+        ],
+        "position": [
+          -4.600225,
+          2.712454,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031755,
+        "right": 0.007353
+      },
+      "gripper_driver_positions": {
+        "left": 0.000268,
+        "right": 0.000259
+      },
+      "phase": "initial_state",
+      "simulation_step": 0,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29074,
+            -0.439814,
+            0.784474,
+            0.32655
+          ],
+          "position": [
+            -4.322839,
+            1.878005,
+            0.856878
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325086,
+            0.784334,
+            -0.44122,
+            0.290626
+          ],
+          "position": [
+            -4.88003,
+            1.878734,
+            0.856592
+          ]
+        }
+      },
+      "time_seconds": 0.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706602,
+          -0.0,
+          1e-06,
+          0.707611
+        ],
+        "position": [
+          -4.600225,
+          2.712454,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031755,
+        "right": 0.007353
+      },
+      "gripper_driver_positions": {
+        "left": 0.000268,
+        "right": 0.000259
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 0,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29074,
+            -0.439814,
+            0.784474,
+            0.32655
+          ],
+          "position": [
+            -4.322839,
+            1.878005,
+            0.856878
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325086,
+            0.784334,
+            -0.44122,
+            0.290626
+          ],
+          "position": [
+            -4.88003,
+            1.878734,
+            0.856592
+          ]
+        }
+      },
+      "time_seconds": 0.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706595,
+          0.0,
+          -1e-06,
+          0.707618
+        ],
+        "position": [
+          -4.600242,
+          2.713683,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032258,
+        "right": 0.009712
+      },
+      "gripper_driver_positions": {
+        "left": 0.000249,
+        "right": 0.000115
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 24,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290734,
+            -0.439808,
+            0.784477,
+            0.326554
+          ],
+          "position": [
+            -4.322871,
+            1.879225,
+            0.85687
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325088,
+            0.784329,
+            -0.44123,
+            0.290623
+          ],
+          "position": [
+            -4.880062,
+            1.879968,
+            0.856584
+          ]
+        }
+      },
+      "time_seconds": 0.1
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706618,
+          0.0,
+          0.0,
+          0.707595
+        ],
+        "position": [
+          -4.600235,
+          2.715006,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.03132,
+        "right": 0.009376
+      },
+      "gripper_driver_positions": {
+        "left": 0.00024,
+        "right": 5.3e-05
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 48,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290744,
+            -0.439838,
+            0.784462,
+            0.326544
+          ],
+          "position": [
+            -4.322808,
+            1.880562,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325098,
+            0.784341,
+            -0.441206,
+            0.290616
+          ],
+          "position": [
+            -4.879999,
+            1.881267,
+            0.856579
+          ]
+        }
+      },
+      "time_seconds": 0.2
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706613,
+          1e-06,
+          -0.0,
+          0.707601
+        ],
+        "position": [
+          -4.60024,
+          2.716768,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030473,
+        "right": 0.008336
+      },
+      "gripper_driver_positions": {
+        "left": 0.000236,
+        "right": 2.6e-05
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 72,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290742,
+            -0.439835,
+            0.784464,
+            0.326544
+          ],
+          "position": [
+            -4.322826,
+            1.882315,
+            0.856862
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325095,
+            0.784333,
+            -0.441215,
+            0.290627
+          ],
+          "position": [
+            -4.880016,
+            1.883027,
+            0.856579
+          ]
+        }
+      },
+      "time_seconds": 0.3
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706621,
+          -2e-06,
+          -4e-06,
+          0.707592
+        ],
+        "position": [
+          -4.600242,
+          2.719214,
+          0.004412
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032014,
+        "right": 0.011694
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 1.4e-05
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 96,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29075,
+            -0.439848,
+            0.784456,
+            0.326539
+          ],
+          "position": [
+            -4.322811,
+            1.884756,
+            0.85686
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325103,
+            0.784333,
+            -0.441207,
+            0.29063
+          ],
+          "position": [
+            -4.879999,
+            1.885456,
+            0.856577
+          ]
+        }
+      },
+      "time_seconds": 0.4
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706617,
+          1e-06,
+          -0.0,
+          0.707596
+        ],
+        "position": [
+          -4.600244,
+          2.722532,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032274,
+        "right": 0.007788
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 9e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 120,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290746,
+            -0.439845,
+            0.784458,
+            0.326539
+          ],
+          "position": [
+            -4.322819,
+            1.888076,
+            0.856859
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325097,
+            0.784332,
+            -0.441213,
+            0.290631
+          ],
+          "position": [
+            -4.880008,
+            1.888781,
+            0.856576
+          ]
+        }
+      },
+      "time_seconds": 0.5
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706619,
+          1e-06,
+          -0.0,
+          0.707594
+        ],
+        "position": [
+          -4.600245,
+          2.726729,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031448,
+        "right": 0.009427
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 7e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 144,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290748,
+            -0.439846,
+            0.784458,
+            0.326539
+          ],
+          "position": [
+            -4.322817,
+            1.892277,
+            0.856861
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325097,
+            0.784332,
+            -0.441212,
+            0.290633
+          ],
+          "position": [
+            -4.880006,
+            1.892976,
+            0.856579
+          ]
+        }
+      },
+      "time_seconds": 0.6
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706619,
+          1e-06,
+          -0.0,
+          0.707594
+        ],
+        "position": [
+          -4.600243,
+          2.731644,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031332,
+        "right": 0.008831
+      },
+      "gripper_driver_positions": {
+        "left": 0.000233,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 168,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290747,
+            -0.439845,
+            0.784458,
+            0.326539
+          ],
+          "position": [
+            -4.322816,
+            1.897192,
+            0.856861
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325098,
+            0.784332,
+            -0.441211,
+            0.290633
+          ],
+          "position": [
+            -4.880005,
+            1.897893,
+            0.85658
+          ]
+        }
+      },
+      "time_seconds": 0.7
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706615,
+          0.0,
+          0.0,
+          0.707598
+        ],
+        "position": [
+          -4.600239,
+          2.737122,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031725,
+        "right": 0.008751
+      },
+      "gripper_driver_positions": {
+        "left": 0.000233,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 192,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290743,
+            -0.439839,
+            0.784462,
+            0.326543
+          ],
+          "position": [
+            -4.322822,
+            1.902669,
+            0.85686
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325097,
+            0.78433,
+            -0.441215,
+            0.290632
+          ],
+          "position": [
+            -4.880011,
+            1.903377,
+            0.85658
+          ]
+        }
+      },
+      "time_seconds": 0.8
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706614,
+          1e-06,
+          -1e-06,
+          0.7076
+        ],
+        "position": [
+          -4.600235,
+          2.743014,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031033,
+        "right": 0.009385
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 216,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29074,
+            -0.439834,
+            0.784464,
+            0.326546
+          ],
+          "position": [
+            -4.322821,
+            1.908563,
+            0.856861
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325098,
+            0.78433,
+            -0.441216,
+            0.290632
+          ],
+          "position": [
+            -4.880008,
+            1.909271,
+            0.856581
+          ]
+        }
+      },
+      "time_seconds": 0.9
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706613,
+          1e-06,
+          -1e-06,
+          0.7076
+        ],
+        "position": [
+          -4.600233,
+          2.749186,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031103,
+        "right": 0.009724
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 240,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290741,
+            -0.439833,
+            0.784464,
+            0.326546
+          ],
+          "position": [
+            -4.322818,
+            1.914737,
+            0.856863
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325099,
+            0.784331,
+            -0.441215,
+            0.29063
+          ],
+          "position": [
+            -4.880007,
+            1.915446,
+            0.856582
+          ]
+        }
+      },
+      "time_seconds": 1.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70669,
+          -2.1e-05,
+          4.2e-05,
+          0.707523
+        ],
+        "position": [
+          -4.600162,
+          2.75551,
+          0.00442
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030531,
+        "right": -0.010289
+      },
+      "gripper_driver_positions": {
+        "left": 0.000231,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 264,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290735,
+            -0.439931,
+            0.784419,
+            0.32653
+          ],
+          "position": [
+            -4.32263,
+            1.92113,
+            0.856868
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325131,
+            0.784373,
+            -0.441119,
+            0.290626
+          ],
+          "position": [
+            -4.879826,
+            1.921736,
+            0.856591
+          ]
+        }
+      },
+      "time_seconds": 1.1
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706714,
+          1e-06,
+          -1e-06,
+          0.7075
+        ],
+        "position": [
+          -4.600146,
+          2.761958,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032075,
+        "right": 0.010764
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 288,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290787,
+            -0.439948,
+            0.784398,
+            0.326511
+          ],
+          "position": [
+            -4.322488,
+            1.927587,
+            0.856859
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325142,
+            0.784396,
+            -0.4411,
+            0.290578
+          ],
+          "position": [
+            -4.879681,
+            1.928144,
+            0.856582
+          ]
+        }
+      },
+      "time_seconds": 1.2
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706709,
+          -0.0,
+          1e-06,
+          0.707505
+        ],
+        "position": [
+          -4.600151,
+          2.76832,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.029553,
+        "right": 0.007948
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 312,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29078,
+            -0.43994,
+            0.784406,
+            0.326508
+          ],
+          "position": [
+            -4.322514,
+            1.93395,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325141,
+            0.784393,
+            -0.441104,
+            0.290584
+          ],
+          "position": [
+            -4.879705,
+            1.934512,
+            0.856584
+          ]
+        }
+      },
+      "time_seconds": 1.3
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.7067,
+          1e-06,
+          -0.0,
+          0.707513
+        ],
+        "position": [
+          -4.600162,
+          2.774475,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.029936,
+        "right": 0.008586
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 336,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290777,
+            -0.439929,
+            0.784412,
+            0.32651
+          ],
+          "position": [
+            -4.322544,
+            1.9401,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325139,
+            0.784388,
+            -0.441113,
+            0.290585
+          ],
+          "position": [
+            -4.879734,
+            1.940676,
+            0.856585
+          ]
+        }
+      },
+      "time_seconds": 1.4
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706701,
+          1e-06,
+          -0.0,
+          0.707512
+        ],
+        "position": [
+          -4.600152,
+          2.780322,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.026997,
+        "right": 0.00295
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 360,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290777,
+            -0.439924,
+            0.784413,
+            0.326515
+          ],
+          "position": [
+            -4.322526,
+            1.94595,
+            0.856864
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325137,
+            0.78439,
+            -0.441113,
+            0.290582
+          ],
+          "position": [
+            -4.879716,
+            1.946521,
+            0.856584
+          ]
+        }
+      },
+      "time_seconds": 1.5
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706688,
+          1e-06,
+          0.0,
+          0.707526
+        ],
+        "position": [
+          -4.600161,
+          2.78577,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.033747,
+        "right": 0.014547
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 384,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290769,
+            -0.439911,
+            0.784422,
+            0.326517
+          ],
+          "position": [
+            -4.322574,
+            1.95139,
+            0.856869
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325133,
+            0.78438,
+            -0.441126,
+            0.290591
+          ],
+          "position": [
+            -4.879764,
+            1.951984,
+            0.856587
+          ]
+        }
+      },
+      "time_seconds": 1.6
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706679,
+          0.0,
+          0.0,
+          0.707534
+        ],
+        "position": [
+          -4.600164,
+          2.790755,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.029299,
+        "right": 0.006296
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 408,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290766,
+            -0.439899,
+            0.784427,
+            0.326523
+          ],
+          "position": [
+            -4.322593,
+            1.956368,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325129,
+            0.784376,
+            -0.441136,
+            0.290593
+          ],
+          "position": [
+            -4.879784,
+            1.956976,
+            0.856587
+          ]
+        }
+      },
+      "time_seconds": 1.7
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706674,
+          0.0,
+          0.0,
+          0.707539
+        ],
+        "position": [
+          -4.600171,
+          2.795213,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032061,
+        "right": 0.010743
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 432,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290763,
+            -0.439893,
+            0.784431,
+            0.326525
+          ],
+          "position": [
+            -4.322614,
+            1.960822,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325127,
+            0.784373,
+            -0.441142,
+            0.290595
+          ],
+          "position": [
+            -4.879804,
+            1.961438,
+            0.856587
+          ]
+        }
+      },
+      "time_seconds": 1.8
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706667,
+          0.0,
+          0.0,
+          0.707546
+        ],
+        "position": [
+          -4.600172,
+          2.799138,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030671,
+        "right": 0.009179
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 456,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.29076,
+            -0.439885,
+            0.784436,
+            0.326528
+          ],
+          "position": [
+            -4.322632,
+            1.964742,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325125,
+            0.784368,
+            -0.441149,
+            0.290601
+          ],
+          "position": [
+            -4.879821,
+            1.965367,
+            0.856588
+          ]
+        }
+      },
+      "time_seconds": 1.9
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706662,
+          0.0,
+          -0.0,
+          0.707551
+        ],
+        "position": [
+          -4.600177,
+          2.802558,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.034232,
+        "right": 0.014051
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 480,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290755,
+            -0.439881,
+            0.784439,
+            0.32653
+          ],
+          "position": [
+            -4.322653,
+            1.968159,
+            0.856868
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325125,
+            0.784364,
+            -0.441154,
+            0.290602
+          ],
+          "position": [
+            -4.879842,
+            1.968793,
+            0.856587
+          ]
+        }
+      },
+      "time_seconds": 2.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706657,
+          -1e-06,
+          2e-06,
+          0.707556
+        ],
+        "position": [
+          -4.600178,
+          2.805502,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.027374,
+        "right": 0.003611
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 504,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290755,
+            -0.439875,
+            0.784442,
+            0.326531
+          ],
+          "position": [
+            -4.322661,
+            1.971098,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325121,
+            0.784363,
+            -0.441159,
+            0.290602
+          ],
+          "position": [
+            -4.879851,
+            1.971742,
+            0.856585
+          ]
+        }
+      },
+      "time_seconds": 2.1
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706671,
+          -1e-06,
+          1e-06,
+          0.707542
+        ],
+        "position": [
+          -4.600166,
+          2.808017,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.027773,
+        "right": 0.003618
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 528,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290761,
+            -0.439894,
+            0.784432,
+            0.326523
+          ],
+          "position": [
+            -4.322617,
+            1.973622,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325127,
+            0.784372,
+            -0.441142,
+            0.290598
+          ],
+          "position": [
+            -4.879807,
+            1.974244,
+            0.856585
+          ]
+        }
+      },
+      "time_seconds": 2.2
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706666,
+          1e-06,
+          -1e-06,
+          0.707548
+        ],
+        "position": [
+          -4.600167,
+          2.810164,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.032695,
+        "right": 0.012993
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 552,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290757,
+            -0.439884,
+            0.784437,
+            0.326529
+          ],
+          "position": [
+            -4.322634,
+            1.975767,
+            0.856868
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325125,
+            0.784365,
+            -0.441152,
+            0.290602
+          ],
+          "position": [
+            -4.879823,
+            1.976394,
+            0.856586
+          ]
+        }
+      },
+      "time_seconds": 2.3
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706663,
+          -1e-06,
+          2e-06,
+          0.707551
+        ],
+        "position": [
+          -4.600173,
+          2.811883,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.028367,
+        "right": 0.005579
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 576,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290756,
+            -0.439881,
+            0.784439,
+            0.326529
+          ],
+          "position": [
+            -4.322645,
+            1.977484,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325124,
+            0.784366,
+            -0.441152,
+            0.290601
+          ],
+          "position": [
+            -4.879834,
+            1.978118,
+            0.856586
+          ]
+        }
+      },
+      "time_seconds": 2.4
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706659,
+          -0.0,
+          0.0,
+          0.707554
+        ],
+        "position": [
+          -4.600175,
+          2.812787,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.031433,
+        "right": 0.01021
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 600,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290752,
+            -0.439873,
+            0.784443,
+            0.326534
+          ],
+          "position": [
+            -4.322656,
+            1.97839,
+            0.856868
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325124,
+            0.784364,
+            -0.441155,
+            0.290601
+          ],
+          "position": [
+            -4.879845,
+            1.979029,
+            0.856589
+          ]
+        }
+      },
+      "time_seconds": 2.5
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70666,
+          -1e-06,
+          1e-06,
+          0.707553
+        ],
+        "position": [
+          -4.600173,
+          2.813013,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030273,
+        "right": 0.008273
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 624,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290755,
+            -0.439879,
+            0.784441,
+            0.32653
+          ],
+          "position": [
+            -4.322651,
+            1.978613,
+            0.856867
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325123,
+            0.784364,
+            -0.441155,
+            0.290603
+          ],
+          "position": [
+            -4.879841,
+            1.97925,
+            0.856587
+          ]
+        }
+      },
+      "time_seconds": 2.6
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70666,
+          -1e-06,
+          1e-06,
+          0.707553
+        ],
+        "position": [
+          -4.600173,
+          2.812788,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030762,
+        "right": 0.008919
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_north_clearance",
+      "simulation_step": 648,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290755,
+            -0.43988,
+            0.78444,
+            0.326529
+          ],
+          "position": [
+            -4.322653,
+            1.978384,
+            0.856866
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325122,
+            0.784363,
+            -0.441157,
+            0.290605
+          ],
+          "position": [
+            -4.879841,
+            1.979021,
+            0.856585
+          ]
+        }
+      },
+      "time_seconds": 2.7
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70666,
+          -1e-06,
+          2e-06,
+          0.707553
+        ],
+        "position": [
+          -4.600173,
+          2.812706,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.028163,
+        "right": 0.003851
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 655,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290756,
+            -0.439882,
+            0.784439,
+            0.326527
+          ],
+          "position": [
+            -4.322653,
+            1.978301,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325121,
+            0.784363,
+            -0.441157,
+            0.290605
+          ],
+          "position": [
+            -4.879841,
+            1.978939,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 2.729167
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706516,
+          1e-05,
+          -7e-06,
+          0.707697
+        ],
+        "position": [
+          -4.600231,
+          2.812717,
+          0.004411
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.02969,
+        "right": 0.008215
+      },
+      "gripper_driver_positions": {
+        "left": 0.000236,
+        "right": 5e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 672,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290687,
+            -0.439732,
+            0.784501,
+            0.326641
+          ],
+          "position": [
+            -4.323031,
+            1.978182,
+            0.856829
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325409,
+            0.784015,
+            -0.441494,
+            0.29071
+          ],
+          "position": [
+            -4.880384,
+            1.978931,
+            0.856348
+          ]
+        }
+      },
+      "time_seconds": 2.8
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.706739,
+          2e-06,
+          -0.0,
+          0.707474
+        ],
+        "position": [
+          -4.600171,
+          2.812857,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030532,
+        "right": 0.009012
+      },
+      "gripper_driver_positions": {
+        "left": 0.000236,
+        "right": 5e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 696,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290781,
+            -0.439968,
+            0.784383,
+            0.326524
+          ],
+          "position": [
+            -4.322474,
+            1.978514,
+            0.856852
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325278,
+            0.784308,
+            -0.441142,
+            0.290602
+          ],
+          "position": [
+            -4.87972,
+            1.97897,
+            0.856502
+          ]
+        }
+      },
+      "time_seconds": 2.9
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707105,
+          1e-06,
+          -1e-06,
+          0.707109
+        ],
+        "position": [
+          -4.59947,
+          2.812787,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.03209,
+        "right": 0.010253
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 720,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290981,
+            -0.440463,
+            0.784038,
+            0.326507
+          ],
+          "position": [
+            -4.320819,
+            1.978665,
+            0.856748
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325352,
+            0.784606,
+            -0.440685,
+            0.290406
+          ],
+          "position": [
+            -4.878103,
+            1.978645,
+            0.856548
+          ]
+        }
+      },
+      "time_seconds": 3.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707095,
+          -0.0,
+          1e-06,
+          0.707119
+        ],
+        "position": [
+          -4.599118,
+          2.812836,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030218,
+        "right": 0.007997
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 744,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290969,
+            -0.440402,
+            0.784121,
+            0.326401
+          ],
+          "position": [
+            -4.320536,
+            1.978743,
+            0.856823
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325319,
+            0.784624,
+            -0.440679,
+            0.290405
+          ],
+          "position": [
+            -4.87776,
+            1.978716,
+            0.856568
+          ]
+        }
+      },
+      "time_seconds": 3.1
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707078,
+          -0.0,
+          1e-06,
+          0.707136
+        ],
+        "position": [
+          -4.598886,
+          2.81287,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030188,
+        "right": 0.008834
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 768,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290956,
+            -0.440361,
+            0.78416,
+            0.326373
+          ],
+          "position": [
+            -4.32037,
+            1.978778,
+            0.85685
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.3253,
+            0.784618,
+            -0.440697,
+            0.290415
+          ],
+          "position": [
+            -4.87757,
+            1.978768,
+            0.856577
+          ]
+        }
+      },
+      "time_seconds": 3.2
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707078,
+          -0.0,
+          1e-06,
+          0.707136
+        ],
+        "position": [
+          -4.598875,
+          2.812876,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030921,
+        "right": 0.008626
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 792,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290953,
+            -0.440354,
+            0.784171,
+            0.32636
+          ],
+          "position": [
+            -4.320364,
+            1.97879,
+            0.856859
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325296,
+            0.784621,
+            -0.440695,
+            0.290415
+          ],
+          "position": [
+            -4.877557,
+            1.978775,
+            0.85658
+          ]
+        }
+      },
+      "time_seconds": 3.3
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707078,
+          -0.0,
+          1e-06,
+          0.707136
+        ],
+        "position": [
+          -4.59881,
+          2.812884,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030641,
+        "right": 0.008237
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 816,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290949,
+            -0.440349,
+            0.784176,
+            0.326358
+          ],
+          "position": [
+            -4.320306,
+            1.978803,
+            0.856862
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325293,
+            0.784619,
+            -0.440697,
+            0.290419
+          ],
+          "position": [
+            -4.877496,
+            1.978781,
+            0.856582
+          ]
+        }
+      },
+      "time_seconds": 3.4
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707077,
+          -0.0,
+          2e-06,
+          0.707137
+        ],
+        "position": [
+          -4.598788,
+          2.812887,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030313,
+        "right": 0.007826
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 840,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290949,
+            -0.440348,
+            0.784177,
+            0.326355
+          ],
+          "position": [
+            -4.320285,
+            1.978806,
+            0.856864
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325292,
+            0.78462,
+            -0.440697,
+            0.290418
+          ],
+          "position": [
+            -4.877475,
+            1.978787,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 3.5
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707075,
+          -0.0,
+          1e-06,
+          0.707139
+        ],
+        "position": [
+          -4.598752,
+          2.812887,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030529,
+        "right": 0.008527
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 864,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290949,
+            -0.440345,
+            0.784179,
+            0.326356
+          ],
+          "position": [
+            -4.320255,
+            1.978804,
+            0.856864
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.32529,
+            0.784618,
+            -0.4407,
+            0.290421
+          ],
+          "position": [
+            -4.877444,
+            1.978787,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 3.6
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707074,
+          -0.0,
+          1e-06,
+          0.70714
+        ],
+        "position": [
+          -4.598784,
+          2.812888,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030273,
+        "right": 0.008763
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 888,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290949,
+            -0.440345,
+            0.784179,
+            0.326356
+          ],
+          "position": [
+            -4.320289,
+            1.978804,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325291,
+            0.784618,
+            -0.440701,
+            0.29042
+          ],
+          "position": [
+            -4.877479,
+            1.978789,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 3.7
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707072,
+          -0.0,
+          1e-06,
+          0.707142
+        ],
+        "position": [
+          -4.598756,
+          2.812891,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030434,
+        "right": 0.008383
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 912,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290948,
+            -0.440342,
+            0.784181,
+            0.326357
+          ],
+          "position": [
+            -4.320267,
+            1.978805,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.32529,
+            0.784616,
+            -0.440704,
+            0.290421
+          ],
+          "position": [
+            -4.877456,
+            1.978793,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 3.8
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707072,
+          -0.0,
+          1e-06,
+          0.707142
+        ],
+        "position": [
+          -4.598781,
+          2.81289,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030542,
+        "right": 0.008319
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 936,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290947,
+            -0.440342,
+            0.784181,
+            0.326357
+          ],
+          "position": [
+            -4.320291,
+            1.978804,
+            0.856864
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.32529,
+            0.784617,
+            -0.440703,
+            0.29042
+          ],
+          "position": [
+            -4.87748,
+            1.978793,
+            0.856582
+          ]
+        }
+      },
+      "time_seconds": 3.9
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70707,
+          -0.0,
+          1e-06,
+          0.707143
+        ],
+        "position": [
+          -4.59876,
+          2.812891,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030408,
+        "right": 0.008933
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 960,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290947,
+            -0.44034,
+            0.784182,
+            0.326358
+          ],
+          "position": [
+            -4.320273,
+            1.978804,
+            0.856866
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325289,
+            0.784615,
+            -0.440705,
+            0.290422
+          ],
+          "position": [
+            -4.877462,
+            1.978794,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.0
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707071,
+          -0.0,
+          1e-06,
+          0.707143
+        ],
+        "position": [
+          -4.598778,
+          2.812891,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030443,
+        "right": 0.008325
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 984,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290947,
+            -0.440341,
+            0.784182,
+            0.326357
+          ],
+          "position": [
+            -4.32029,
+            1.978803,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325289,
+            0.784616,
+            -0.440705,
+            0.290422
+          ],
+          "position": [
+            -4.877481,
+            1.978794,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.1
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.70707,
+          -0.0,
+          1e-06,
+          0.707143
+        ],
+        "position": [
+          -4.598763,
+          2.81289,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.029914,
+        "right": 0.00827
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1008,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290947,
+            -0.440339,
+            0.784183,
+            0.326358
+          ],
+          "position": [
+            -4.320278,
+            1.978804,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325288,
+            0.784615,
+            -0.440705,
+            0.290424
+          ],
+          "position": [
+            -4.877467,
+            1.978794,
+            0.856584
+          ]
+        }
+      },
+      "time_seconds": 4.2
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707069,
+          -0.0,
+          1e-06,
+          0.707144
+        ],
+        "position": [
+          -4.598775,
+          2.812891,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030455,
+        "right": 0.008414
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1032,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290948,
+            -0.440339,
+            0.784183,
+            0.326357
+          ],
+          "position": [
+            -4.320291,
+            1.978802,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325288,
+            0.784615,
+            -0.440706,
+            0.290424
+          ],
+          "position": [
+            -4.87748,
+            1.978795,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.3
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707069,
+          -0.0,
+          1e-06,
+          0.707145
+        ],
+        "position": [
+          -4.598765,
+          2.812891,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030551,
+        "right": 0.008329
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1056,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290946,
+            -0.440338,
+            0.784183,
+            0.326358
+          ],
+          "position": [
+            -4.320282,
+            1.978803,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325288,
+            0.784614,
+            -0.440706,
+            0.290424
+          ],
+          "position": [
+            -4.877471,
+            1.978795,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.4
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707069,
+          0.0,
+          -0.0,
+          0.707144
+        ],
+        "position": [
+          -4.598776,
+          2.81289,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030691,
+        "right": 0.010297
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1080,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290946,
+            -0.440336,
+            0.784184,
+            0.32636
+          ],
+          "position": [
+            -4.320291,
+            1.978804,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325289,
+            0.784614,
+            -0.440708,
+            0.29042
+          ],
+          "position": [
+            -4.877481,
+            1.978795,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.5
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707069,
+          -0.0,
+          1e-06,
+          0.707145
+        ],
+        "position": [
+          -4.598765,
+          2.812891,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030699,
+        "right": 0.008574
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1104,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290945,
+            -0.440338,
+            0.784183,
+            0.326359
+          ],
+          "position": [
+            -4.320282,
+            1.978803,
+            0.856865
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325288,
+            0.784615,
+            -0.440707,
+            0.290422
+          ],
+          "position": [
+            -4.877472,
+            1.978795,
+            0.856583
+          ]
+        }
+      },
+      "time_seconds": 4.6
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707069,
+          0.0,
+          -0.0,
+          0.707144
+        ],
+        "position": [
+          -4.598777,
+          2.812889,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.028351,
+        "right": 0.011043
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1128,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290948,
+            -0.440335,
+            0.784184,
+            0.326358
+          ],
+          "position": [
+            -4.320293,
+            1.978803,
+            0.856868
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325288,
+            0.784614,
+            -0.440708,
+            0.290423
+          ],
+          "position": [
+            -4.877483,
+            1.978793,
+            0.856585
+          ]
+        }
+      },
+      "time_seconds": 4.7
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707072,
+          -0.0,
+          1e-06,
+          0.707142
+        ],
+        "position": [
+          -4.599261,
+          2.812885,
+          0.004409
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030375,
+        "right": 0.008481
+      },
+      "gripper_driver_positions": {
+        "left": 0.000234,
+        "right": 6e-06
+      },
+      "phase": "cup_route_clear_table_north",
+      "simulation_step": 1152,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290955,
+            -0.440349,
+            0.784178,
+            0.326348
+          ],
+          "position": [
+            -4.320762,
+            1.978792,
+            0.856866
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325292,
+            0.784623,
+            -0.440697,
+            0.290411
+          ],
+          "position": [
+            -4.877953,
+            1.978793,
+            0.85658
+          ]
+        }
+      },
+      "time_seconds": 4.8
+    },
+    {
+      "base": {
+        "orientation_wxyz": [
+          -0.707072,
+          -0.0,
+          1e-06,
+          0.707141
+        ],
+        "position": [
+          -4.599498,
+          2.812883,
+          0.00441
+        ]
+      },
+      "gripper_driver_efforts": {
+        "left": -0.030282,
+        "right": 0.009099
+      },
+      "gripper_driver_positions": {
+        "left": 0.000235,
+        "right": 6e-06
+      },
+      "phase": "final_state",
+      "simulation_step": 1165,
+      "task_objects": {
+        "bowl": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.3,
+            -1.5,
+            0.75424
+          ]
+        },
+        "cup": {
+          "orientation_wxyz": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position": [
+            -4.185559,
+            -1.751029,
+            0.752456
+          ]
+        },
+        "plate": {
+          "orientation_wxyz": [
+            0.996083,
+            0.0,
+            0.0,
+            -0.088428
+          ],
+          "position": [
+            -4.308905,
+            -1.660882,
+            0.748423
+          ]
+        },
+        "spoon": {
+          "orientation_wxyz": [
+            -0.650474,
+            0.037008,
+            -0.03176,
+            0.757961
+          ],
+          "position": [
+            -4.341379,
+            -1.679195,
+            0.766856
+          ]
+        },
+        "tray": {
+          "orientation_wxyz": [
+            0.5,
+            0.5,
+            0.57148,
+            0.5
+          ],
+          "position": [
+            -4.281839,
+            -1.618102,
+            0.767129
+          ]
+        }
+      },
+      "tcp": {
+        "left": {
+          "orientation_wxyz": [
+            -0.290943,
+            -0.440337,
+            0.784183,
+            0.326362
+          ],
+          "position": [
+            -4.321012,
+            1.978802,
+            0.856866
+          ]
+        },
+        "right": {
+          "orientation_wxyz": [
+            -0.325289,
+            0.784613,
+            -0.440707,
+            0.290427
+          ],
+          "position": [
+            -4.878201,
+            1.978781,
+            0.856584
+          ]
+        }
+      },
+      "time_seconds": 4.854167
+    }
+  ],
+  "kind": "airsign_ebim_track3_stage1_physical_gate_trace",
+  "official_score_claimed": false,
+  "official_stage_completion_claimed": false,
+  "provenance": {
+    "configured_robot_start": {
+      "position": [
+        -4.6,
+        2.7,
+        0.0
+      ],
+      "yaw_degrees": -90.0
+    },
+    "container_image": "airsignrobot:stage1-be057128",
+    "container_image_id": "sha256:ef53a18c7280be84e8b3e998b774e7e10f027ed399f9e765287989cd148cd013",
+    "controller_path_in_runtime": "/workspace/EBiM_Challenge/ebim-track3-solution/stage1_table_setup.py",
+    "controller_sha256": "be057128666bb7419d2f3543a3a19e98cdf3d2de6319fdb2cdda5e7ff2af9ab5",
+    "head_placement": "A",
+    "official_benchmark_commit": "cb5184574f33611f943ff42aae461678ccb538e9",
+    "physics_hz": 240.0,
+    "python": "3.11.13",
+    "requested_robot_pose_overrides": {
+      "x": null,
+      "y": null,
+      "yaw_degrees": null,
+      "z": null
+    },
+    "robot_asset": "/workspace/EBiM_Challenge/task1_isaacsim/assets/Robotiq_2f_85_with_d405_mobile_fr3_duo_v0_2.usd",
+    "robot_asset_sha256": "aa1a833de48cc543c73957461dab82fe0979320b7c0b6a0a113d24b500075e5c",
+    "room_asset": "/workspace/EBiM_Challenge/assets/robot_room.usd",
+    "room_asset_sha256": "696c71577f1874d815fe29c6a58c65f0f1a0a0fb15c0d8adbb5105209f5ff883",
+    "simulator": "Isaac Sim 5.1.0",
+    "trace_hz": 10
+  },
+  "robot_links_teleported": false,
+  "schema_version": 1,
+  "task_object_mutation_api_used": false,
+  "task_objects_teleported": false
+}
