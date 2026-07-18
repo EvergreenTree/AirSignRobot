@@ -9,13 +9,14 @@
 This repository is the Docker submission contract for AirSign's actuator-driven
 Task 3 work. The image pins the exact official benchmark snapshot and Robotiq
 robot asset used during validation, then exposes a GPU-free image smoke test and
-two headless Isaac Sim participant workloads.
+three headless Isaac Sim participant workloads.
 
 > **Evidence boundary:** the included workloads validate dual-arm IK,
-> articulation-driven Robotiq motion, and closed-loop mobile-base control. They
-> do not yet constitute a verified four-stage run, and this repository makes no
-> official benchmark-score claim. The official rulebook score is 16 points; the
-> repository's 18-point development grader is non-authoritative.
+> articulation-driven Robotiq motion, closed-loop mobile-base control, and a
+> four-stage actuator rehearsal. The rehearsal does not verify rulebook object
+> or bean outcomes, so it is not an official four-stage completion and this
+> repository makes no benchmark-score claim. The official rulebook score is 16
+> points; the repository's 18-point development grader is non-authoritative.
 
 ## Reproducibility lock
 
@@ -135,6 +136,47 @@ commands an open → closed → open sequence only through articulation actions,
 and reads the task-object and logical-region inventory without mutating it.
 Success ends with `GRIPPER_SCENE_GATE2_RESULT` containing `"passed": true`.
 
+### Four-stage browser replay
+
+Record a deterministic actuator rehearsal covering the intent and motion phases
+for Table Setup, Feeding, Bean Recovery, and Cleanup:
+
+```bash
+mkdir -p evidence-output
+docker run --rm \
+  --gpus all \
+  --network host \
+  --ipc host \
+  --shm-size=8g \
+  -v "$PWD/evidence-output:/evidence-output" \
+  airsignrobot:task3 \
+  four-stage-rehearsal \
+  --output-dir /evidence-output \
+  --head-placement A
+```
+
+The workload writes:
+
+- `replay_trace.json`: 10 Hz measured base, joint, gripper, TCP, and task-object
+  states suitable for deterministic WebGL playback;
+- `metrics.json`: independent actuator gates for all four stages, with every
+  official completion and score field explicitly false or null;
+- `manifest.json`: SHA-256 and byte count for the replay and metrics files.
+
+Validate the bundle without running physics again:
+
+```bash
+docker run --rm \
+  -v "$PWD/evidence-output:/evidence:ro" \
+  airsignrobot:task3 \
+  validate-replay /evidence
+```
+
+The validator checks frame ordering, all four stage IDs, joint-vector shape,
+finite numeric values, file hashes, and the no-score/no-completion boundary.
+An actuator-gate pass means only that the commanded navigation, IK, gripper, and
+hold waypoints were reached. It does not mean tableware or beans moved.
+
 ## Container command contract
 
 | Command | GPU | Meaning |
@@ -142,6 +184,8 @@ Success ends with `GRIPPER_SCENE_GATE2_RESULT` containing `"passed": true`.
 | `smoke` | No | Integrity and syntax checks; this is the default |
 | `participant [options]` | Yes | Dual-arm IK plus closed-loop base workload |
 | `gripper-gate [options]` | Yes | Robotiq articulation and read-only scene gate |
+| `four-stage-rehearsal [options]` | Yes | Four-stage actuator trace; no outcome claim |
+| `validate-replay DIRECTORY` | No | Validate replay schema, hashes, and claim boundary |
 | `shell [command ...]` | Depends | Debug shell or explicit command |
 | `help` | No | Show the command summary |
 
