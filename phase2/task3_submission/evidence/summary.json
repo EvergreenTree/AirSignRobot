@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "team": "AirSign",
+  "task": 3,
+  "session_dates_local": [
+    "2026-09-11",
+    "2026-09-12"
+  ],
+  "timezone": "Asia/Shanghai",
+  "result_class": "supervised hardware integration and partial approach; no completed Task 3 stage",
+  "right_arm": {
+    "pose_frame": "robot-right arm base; column-major O_T_EE",
+    "finite_trajectory_calls": 5,
+    "delta_measured_m": [
+      0.010046422481000017,
+      -0.10515359044099998,
+      -0.14133489131899998
+    ],
+    "net_displacement_m": 0.1764476117476625,
+    "final_idle_mode_code": 1,
+    "final_has_current_errors": false,
+    "plate_contact_verified": false,
+    "grasp_verified": false,
+    "lift_verified": false,
+    "note": "The final trajectory stdout was not retained. Final endpoint telemetry is retained; no per-step success flag is inferred from it."
+  },
+  "base": {
+    "right_turn_degrees_from_step2_reference": 57.95783339889058,
+    "turns": [
+      {
+        "step": 2,
+        "valid_frames": 348,
+        "settled_xyyaw": [
+          -0.003974149889638288,
+          -0.005761131515445675,
+          -0.058531025111669695
+        ]
+      },
+      {
+        "step": 3,
+        "valid_frames": 348,
+        "settled_xyyaw": [
+          -0.005526979788350648,
+          -0.008054066629343926,
+          -0.025321172188788175
+        ]
+      },
+      {
+        "step": 4,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.009387702937044343,
+          -0.013474242065601083,
+          -0.045884262277556986
+        ]
+      },
+      {
+        "step": 5,
+        "valid_frames": 280,
+        "settled_xyyaw": [
+          -0.002993688320919122,
+          -0.004019937135000791,
+          -0.02870580924819902
+        ]
+      },
+      {
+        "step": 6,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.007902302201640343,
+          -0.01006129982938404,
+          -0.04996440763773491
+        ]
+      },
+      {
+        "step": 7,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.004225900386981533,
+          -0.006762214165036887,
+          -0.05145750472004857
+        ]
+      },
+      {
+        "step": 8,
+        "valid_frames": 280,
+        "settled_xyyaw": [
+          -0.003215209594119956,
+          -0.005731588015173228,
+          -0.04803039734769876
+        ]
+      },
+      {
+        "step": 9,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.0031672098324428085,
+          -0.004049783946699302,
+          -0.05260177550214154
+        ]
+      },
+      {
+        "step": 10,
+        "valid_frames": 280,
+        "settled_xyyaw": [
+          -0.004365456290433282,
+          -0.00669993562094953,
+          -0.04909132859873822
+        ]
+      },
+      {
+        "step": 11,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.0021067554387381652,
+          -0.0037839026353003766,
+          -0.05102714688796493
+        ]
+      },
+      {
+        "step": 12,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.00762810356068881,
+          -0.007062369828954596,
+          -0.04870251826808735
+        ]
+      },
+      {
+        "step": 13,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.011362922559828128,
+          -0.014652806710187389,
+          -0.07804611944534265
+        ]
+      },
+      {
+        "step": 14,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.00584221104232893,
+          -0.008356882937143376,
+          -0.06083037752387003
+        ]
+      },
+      {
+        "step": 15,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.010116429691385119,
+          -0.010634794211401276,
+          -0.05665196474737389
+        ]
+      },
+      {
+        "step": 16,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.010091860090546186,
+          -0.011600829425305671,
+          -0.05988053039352856
+        ]
+      },
+      {
+        "step": 17,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.009820892199350279,
+          -0.013277223087346982,
+          -0.05301055793074593
+        ]
+      },
+      {
+        "step": 18,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.009273446186257658,
+          -0.011145737107125991,
+          -0.04711932620539372
+        ]
+      },
+      {
+        "step": 19,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.009052194560016595,
+          -0.013727130446514503,
+          -0.04992635563555686
+        ]
+      },
+      {
+        "step": 20,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.00834504079597572,
+          -0.011562427909488932,
+          -0.04877386939426344
+        ]
+      },
+      {
+        "step": 21,
+        "valid_frames": 281,
+        "settled_xyyaw": [
+          -0.008636719157695262,
+          -0.011201107169582582,
+          -0.04799857106827325
+        ]
+      }
+    ],
+    "note": "Sum of settled independent scan-registration increments; not an external metrology measurement or successful autonomous navigation."
+  },
+  "human_assistance": [
+    "Operator moved the desk in front of the robot before arm approach.",
+    "Operator performed initialization and emergency-stop supervision and supplied high-level directions.",
+    "Remote agent selected image regions and reviewed each waypoint; no autonomous full run."
+  ],
+  "perception": "Wrist RGB-D with nominal mounting geometry and selected image regions; full hand-eye/contact calibration not completed.",
+  "training": "No Task 3 trajectory training; no Task 3 model weights.",
+  "images": {
+    "before-approach.png": "Right wrist RGB before the first arm translation.",
+    "before-final-step.png": "Right wrist RGB after four translations and before the fifth. No post-fifth-step image is archived."
+  }
+}

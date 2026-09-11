@@ -3,6 +3,12 @@
 The current real-robot codebase for Tasks 1, 2 and 3 is in **[phase2/](phase2/)**.
 Start with the **[on-site migration guide](phase2/MIGRATION.md)**.
 
+**Task 3, September 11-12 hardware session:** [submission package and technical
+report](phase2/task3_submission/README.md). It preserves supervised base motion
+and a partial right-arm plate approach. Plate grasp/lift and full task completion
+were not verified. The [hardware skill](skills/ebim-task3-phase2/SKILL.md) captures
+the startup, frame and control knowledge for another attended session.
+
 ```bash
 git clone https://github.com/EvergreenTree/AirSignRobot.git
 cd AirSignRobot/phase2
@@ -12,7 +18,9 @@ python3 scripts/fetch_policies.py --output policies
 The last command downloads and verifies the trained Task 1/2 weights from the
 [Phase II release](https://github.com/EvergreenTree/AirSignRobot/releases/tag/phase2-v0.2.0).
 Continue with Python installation and service startup in the migration guide.
-All Phase II commands run from `phase2/`; its Dockerfile and runtime are there.
+The ACT migration commands run from `phase2/`; its Dockerfile and runtime are
+there. The Task 3 evidence-review package uses repository-root commands as
+documented in its own README.
 
 [Implementation and research](phase2/README.md) ·
 [Offline results](phase2/docs/results/RESULTS.md) ·

@@ -1,0 +1,44 @@
+[
+  {
+    "path": "phase2/hardware/task3_onsite/tested/native_arm_translation.cpp",
+    "source": "native_arm_translation.cpp",
+    "sha256": "3c007cc5f9ab905946975566952a11162a288e0bb729f0ea63d4cc3c8d253573",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/right_arm_session.py",
+    "source": "right_arm_session.py",
+    "sha256": "e9463a95096e7e4cc24930e5fb8cec70116be7dfa74f0ff873b8a68efeb220ef",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/native_scene_turn.cpp",
+    "source": "native_scene_turn.cpp",
+    "sha256": "9d37920eb9e64ab4dc025ecce1242bb5b848cc6ba1726115d584d1791e2fed60",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/lidar_motion_watch.py",
+    "source": "lidar_motion_watch.py",
+    "sha256": "3b4a4cd02e75b0191518603acab73a25d96ad3dfdefc45fed54c4d4bf8cd66ad",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/live_lidar.py",
+    "source": "live_lidar.py",
+    "sha256": "f36e44d5f1b5077b8e6678ec8cc02e36a51ce33a2576f9f48a4f7f56c8619364",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/run_scene_turn.sh",
+    "source": "run_scene_turn.sh",
+    "sha256": "ddd00f0636ed4393200e1766b9cdae3aea54365b84b0bceb91eb091827146ed2",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  },
+  {
+    "path": "phase2/hardware/task3_onsite/tested/read_base_feedback.cpp",
+    "source": "read_base_feedback.cpp",
+    "sha256": "300216c3a4ced00a994d6d8da57a294ec7fb64c158115561fe82580c7cda09fc",
+    "status": "byte-identical to final on-site source; packaging itself not physically rerun"
+  }
+]
