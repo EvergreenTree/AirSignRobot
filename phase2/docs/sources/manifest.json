@@ -1,0 +1,29 @@
+{
+  "checked_on": "2026-09-10",
+  "files": {
+    "Autonomous_Robot_Benchmark_Rulebook_1.0.pdf": {
+      "sha256": "40dfd3976a810aa26d30e42f59f0804a8871811bb3a020f8d103bf8abc17bd94",
+      "bytes": 91238
+    },
+    "task1_part1_info.json": {
+      "sha256": "2446241cb52f0896edbfedcf4c8830caa2dc3ebb0ab69f03216968b9e8b2e932",
+      "bytes": 13104
+    },
+    "task2_munich_info.json": {
+      "sha256": "dd803c54f9d7cd8824d2ab06f54a703fd71be76dc5d9f4ed138f9cf56e986981",
+      "bytes": 13578
+    },
+    "official_website_tree.json": {
+      "sha256": "f91a0d1ad8613e6d12dbd063383ae55a8f9b0b3773d7ca9b4e270dcf86513208",
+      "bytes": 62033
+    },
+    "official_benchmark_tree.json": {
+      "sha256": "5adb3aa8feef1dd309bac61bfef7cdbc0d66de1abc1db5bbf3b3dd2d5f0b460a",
+      "bytes": 288213
+    },
+    "task1_part2_info.json": {
+      "sha256": "0e4eea3d27f2ec8dbca0e1158c94e9358711382d837c48127a859a8733fc746b",
+      "bytes": 12870
+    }
+  }
+}

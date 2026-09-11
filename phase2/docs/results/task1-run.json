@@ -1,0 +1,76 @@
+{
+  "team": "AirSign",
+  "task": 1,
+  "model_config": {
+    "state_dim": 62,
+    "action_dim": 23,
+    "image_size": 320,
+    "chunk_size": 32,
+    "hidden_dim": 256,
+    "latent_dim": 32,
+    "heads": 8,
+    "encoder_layers": 3,
+    "decoder_layers": 3,
+    "dropout": 0.1,
+    "joint_residual": true
+  },
+  "dataset_coverage": "full_official_release",
+  "args": {
+    "dataset": "/mnt/nas/evergreen/ebim-phase2/data/task1-full",
+    "output": "/mnt/nas/evergreen/ebim-phase2/runs/task1-act",
+    "task": 1,
+    "steps": 10000,
+    "batch_size": 64,
+    "workers": 4,
+    "chunk_size": 32,
+    "hidden_dim": 256,
+    "layers": 3,
+    "lr": 0.0001,
+    "vision_lr": 1e-05,
+    "kl_weight": 1.0,
+    "seed": 42,
+    "eval_every": 500,
+    "eval_samples": 1024,
+    "device": "cuda",
+    "no_pretrained": false,
+    "absolute_actions": false,
+    "backbone_checkpoint": "../cache/backbone/pytorch_model.bin",
+    "resume": null,
+    "evaluate": null
+  },
+  "hardware": {
+    "torch": "2.12.0a0+0291f960b6.nv26.04.48445190",
+    "cuda": "13.2",
+    "device": "cuda",
+    "name": "NVIDIA L20D",
+    "compute_capability": [
+      10,
+      3
+    ],
+    "memory_bytes": 287428771840
+  },
+  "dataset_sha256": "8940bf1494cc171c31ec31b8a00b1288e127542ef8e092c924a4e1fd1ad59b13",
+  "source_hashes": {
+    "__init__.py": "8be14c3243ec82863044fb5fdeb4706785bb22d8a44c79dc43be451048de8db6",
+    "cable.py": "cb8aeb1b0b4afde306f1d056b0da78331964683273278839be0315dcba88ee4d",
+    "data.py": "b3d4707fde69a048ad4507502c111c9498f31f332ef7fddea5a4d97c812bc433",
+    "download.py": "456873dbe422a66a39bb7ae552a4ddc01fec2a0ab72315a58625680bdaf86760",
+    "export.py": "c670e722a92c3e124704a642bbb27484358592b219d7d27fd87dce1b3645db8e",
+    "model.py": "354262d8e2878aad8e05d10ff62e4241cb820b245ebbcadddccefd111bb5bd5b",
+    "mujoco_backend.py": "7c83817b655278f32e03fbd99082b7960dd5cf2c57e60390f3c0dc7c4f381c89",
+    "runtime.py": "5786b70782be06a3c2fa49da65414a4c57349989782c009927e7b9dce8b7ddca",
+    "schema.py": "596c7cddf6ab9bd4f92d4daeab6b85c9fb075a08b9898e3a4fe6bbe7e4f593b9",
+    "scoring.py": "c7b54091ee05e3128a8d072eaa31ad87ae5e7c77f44c97226d73204e38551dfe",
+    "train.py": "98b70bf31823c354208a857ef4c9362195cfc689ca60707bf2c66b91556e45b2",
+    "vision.py": "724369586b669ae125db4e3f0fa9ae5f0eaf12e7d0e1c15ef81c722677e4481c"
+  },
+  "train_episodes": 40,
+  "validation_episodes": 5,
+  "sampling": {
+    "format": "global_step_v1",
+    "seed": 42,
+    "batch_size": 64
+  },
+  "resume_best_note": null,
+  "backbone_checkpoint_sha256": "19b09237bf0e4694f5807b91b082bd026d9c932ae21174b39583b6aaf2c80901"
+}

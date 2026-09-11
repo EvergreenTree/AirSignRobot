@@ -1,3 +1,30 @@
+# AirSign — EBiM Phase II
+
+The current real-robot codebase for Tasks 1, 2 and 3 is in **[phase2/](phase2/)**.
+Start with the **[on-site migration guide](phase2/MIGRATION.md)**.
+
+```bash
+git clone https://github.com/EvergreenTree/AirSignRobot.git
+cd AirSignRobot/phase2
+python3 scripts/fetch_policies.py --output policies
+```
+
+The last command downloads and verifies the trained Task 1/2 weights from the
+[Phase II release](https://github.com/EvergreenTree/AirSignRobot/releases/tag/phase2-v0.2.0).
+Continue with Python installation and service startup in the migration guide.
+All Phase II commands run from `phase2/`; its Dockerfile and runtime are there.
+
+[Implementation and research](phase2/README.md) ·
+[Offline results](phase2/docs/results/RESULTS.md) ·
+[Robot interface contract](phase2/docs/INTERFACE.md)
+
+The trained policies and Task 3 feedback program have offline software validation.
+Actual robot transport, calibration and task perception must be bound to the site.
+The service starts in shadow mode until calibrated; see the integration contract.
+
+<details>
+<summary>Historical Task 3 reference and previous submission</summary>
+
 # AirSignRobot
 
 **Team:** AirSign
@@ -320,3 +347,5 @@ context.
 AirSign-authored files are licensed under Apache License 2.0. The Docker build
 fetches the official EBiM benchmark and uses the NVIDIA Isaac Sim image; those
 components retain their own licenses and terms. See [NOTICE](NOTICE).
+
+</details>

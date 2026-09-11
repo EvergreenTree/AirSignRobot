@@ -1,0 +1,63 @@
+{
+  "arm_actuator_mode": "velocity",
+  "spine_actuator": "franka_spine_vertical_joint",
+  "extra_joints": [
+    "base_planar_x",
+    "base_planar_y",
+    "base_yaw",
+    "franka_spine_vertical_joint"
+  ],
+  "base_velocity_actuators": [
+    "base_planar_x_velocity",
+    "base_planar_y_velocity",
+    "base_yaw_velocity"
+  ],
+  "left": {
+    "joints": [
+      "left_fr3v2_1_joint1",
+      "left_fr3v2_1_joint2",
+      "left_fr3v2_1_joint3",
+      "left_fr3v2_1_joint4",
+      "left_fr3v2_1_joint5",
+      "left_fr3v2_1_joint6",
+      "left_fr3v2_1_joint7"
+    ],
+    "actuators": [
+      "left_fr3v2_1_joint1",
+      "left_fr3v2_1_joint2",
+      "left_fr3v2_1_joint3",
+      "left_fr3v2_1_joint4",
+      "left_fr3v2_1_joint5",
+      "left_fr3v2_1_joint6",
+      "left_fr3v2_1_joint7"
+    ],
+    "tcp_body": "left_fr3v2_1_robotiq_arg85_tcp",
+    "gripper_actuator": "left_fr3v2_1_robotiq_85_left_knuckle_joint",
+    "gripper_open_ctrl": 0,
+    "gripper_closed_ctrl": 0.8
+  },
+  "right": {
+    "joints": [
+      "right_fr3v2_1_joint1",
+      "right_fr3v2_1_joint2",
+      "right_fr3v2_1_joint3",
+      "right_fr3v2_1_joint4",
+      "right_fr3v2_1_joint5",
+      "right_fr3v2_1_joint6",
+      "right_fr3v2_1_joint7"
+    ],
+    "actuators": [
+      "right_fr3v2_1_joint1",
+      "right_fr3v2_1_joint2",
+      "right_fr3v2_1_joint3",
+      "right_fr3v2_1_joint4",
+      "right_fr3v2_1_joint5",
+      "right_fr3v2_1_joint6",
+      "right_fr3v2_1_joint7"
+    ],
+    "tcp_body": "right_fr3v2_1_robotiq_arg85_tcp",
+    "gripper_actuator": "right_fr3v2_1_robotiq_85_left_knuckle_joint",
+    "gripper_open_ctrl": 0,
+    "gripper_closed_ctrl": 0.8
+  }
+}

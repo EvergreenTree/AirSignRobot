@@ -1,0 +1,528 @@
+{
+  "team": "AirSign",
+  "physical_validation": null,
+  "pytest": {
+    "summary": "80 passed, 1 warning in 8.90s",
+    "log_sha256": "0ee95481442a22dc4bc7dbea36146e72ee4e362a1350133fd0193abdc53bfae5"
+  },
+  "wheel": {
+    "installed_module": "/mnt/nas/evergreen/ebim-phase2/wheel-check-env/lib/python3.12/site-packages/ebim_phase2/__init__.py",
+    "wheel_sha256": "bddbe2417a2b70f0de79ddb37034d33161a543c8a2b7a0e97abe7ca1b0c31e78",
+    "core_imports": true,
+    "optional_sim_imports": true,
+    "optional_vision_imports": true,
+    "rejects_non_object_json": true,
+    "task2_waypoints": 8,
+    "task3_waypoints": 105,
+    "vision_detector_revision": "a2bb814dd30d776dcf7e30523b00659f4f141c71",
+    "vision_segmenter_revision": "de431c4043854a71d8101e17995dfe596bf101a5",
+    "optional_versions": {
+      "mujoco": "3.3.7",
+      "opencv": "5.0.0"
+    },
+    "status": "passed separate wheel installation and API checks; no physical validation"
+  },
+  "vision_pretrained": {
+    "team": "AirSign",
+    "models": {
+      "detector": {
+        "repo_id": "IDEA-Research/grounding-dino-tiny",
+        "revision": "a2bb814dd30d776dcf7e30523b00659f4f141c71"
+      },
+      "segmenter": {
+        "repo_id": "facebook/sam2.1-hiera-tiny",
+        "revision": "de431c4043854a71d8101e17995dfe596bf101a5"
+      }
+    },
+    "transformers": "5.12.0",
+    "weight_loading": {
+      "detector": {
+        "required_tensors_loaded": true,
+        "unused_checkpoint_tensors": 0
+      },
+      "segmenter": {
+        "required_tensors_loaded": true,
+        "unused_checkpoint_tensors": 0
+      }
+    },
+    "torch": "2.12.0a0+0291f960b6.nv26.04.48445190",
+    "images": [
+      {
+        "image": "../runs/vision-real-frame-check/head.png",
+        "objects": 7,
+        "missing_labels": [],
+        "elapsed_seconds": 2.0389468650100753
+      },
+      {
+        "image": "../runs/vision-real-frame-check/wrist_right.png",
+        "objects": 7,
+        "missing_labels": [],
+        "elapsed_seconds": 0.19284630904439837
+      }
+    ],
+    "physical_validation": null
+  },
+  "mujoco_actuator_probe": {
+    "team": "AirSign",
+    "scope": "actuator diagnostic only; not a Phase II task rollout",
+    "scene_sha256": "ad1c698b278c85185c5445f97c1710effae73e4fdddb1a9aa43d03662b399808",
+    "mapping_sha256": "97cea8a4594b6f9b2ebe4321576340f357cae9ff6905e1b4a9146e43356e46e7",
+    "initial_joints_sha256": "ad96237588827db53905489ed5d8a1096e0e1e26c425dfb2e4e73ec1ed640944",
+    "mujoco": "3.3.7",
+    "steps": 100,
+    "joint_movement_rad": [
+      0.03245138430456418,
+      -0.0010403902488402839,
+      0.0030199279871574447,
+      -0.001837658076453419,
+      -0.00011618744253949487,
+      -0.00042773947202556784,
+      1.24926204624759e-06,
+      -0.03184665669850806,
+      -0.0007746442912741069,
+      -0.0028645846162800304,
+      -0.0016663162430599066,
+      -0.00011058818396803005,
+      -0.00037201212991866406,
+      -5.2047672202751305e-06
+    ],
+    "finite": true,
+    "benchmark_score": null,
+    "final_max_abs_tracking_error_rad": 0.0030199279871574447,
+    "full_log_sha256": "5b0670c9c9969da38c9b2c8f9c85e5673b471baa2897e42c194cfc59646dde05"
+  },
+  "docker": {
+    "tested_container": false,
+    "reason": "Docker Hub base-image pull failed; no alternate registry path established"
+  },
+  "tasks": {
+    "1": {
+      "interface": {
+        "scope": "offline recorded-image software integration; no physical robot validation",
+        "task": 1,
+        "episode": "task1_part1_000013",
+        "shadow_status": "shadow_native_proposal",
+        "checkpoint_sha256": "4e692119e9cf31fcdf2c9206e57f7fe5fd0161e16ee5090aa304bb3b30686932",
+        "dataset_sha256": "8940bf1494cc171c31ec31b8a00b1288e127542ef8e092c924a4e1fd1ad59b13",
+        "bounded_status": "bounded_proposal",
+        "stale_status": "no_command",
+        "test_only_spine_conversion": true,
+        "image_input": "already-letterboxed released validation images",
+        "input_image_shape": [
+          320,
+          320,
+          3
+        ],
+        "warm_end_to_end_median_ms": 13.075498514808714,
+        "warm_end_to_end_p95_ms": 13.293723948299885,
+        "timing_scope": "prepared-image PNG read/decode, preprocessing, model, temporal ensemble, limits; no native camera acquisition/transport or robot IO"
+      },
+      "http": {
+        "team": "AirSign",
+        "task": 1,
+        "scope": "actual loopback HTTP and RGB replay; no physical robot",
+        "validation_episode": "task1_part1_000013",
+        "requests": 15,
+        "mode": "shadow",
+        "checkpoint_sha256": "4e692119e9cf31fcdf2c9206e57f7fe5fd0161e16ee5090aa304bb3b30686932",
+        "dataset_sha256": "8940bf1494cc171c31ec31b8a00b1288e127542ef8e092c924a4e1fd1ad59b13",
+        "malformed_request_status": 400,
+        "recovery_after_invalid_input": true,
+        "rejected_non_object_json": [
+          "null",
+          "[]",
+          "42"
+        ],
+        "image_input": "already-letterboxed released validation images",
+        "input_image_shape": [
+          320,
+          320,
+          3
+        ],
+        "timing_scope": "prepared-image base64 JSON over loopback HTTP; no native camera acquisition/transport or robot IO",
+        "warm_http_median_ms": 14.912180020473897,
+        "warm_http_p95_ms": 14.951580425258726
+      },
+      "vision-ablation": {
+        "task": 1,
+        "checkpoint_sha256": "4e692119e9cf31fcdf2c9206e57f7fe5fd0161e16ee5090aa304bb3b30686932",
+        "split": "validation",
+        "validation_episodes": 5,
+        "dataset_coverage": "full_official_release",
+        "metrics": {
+          "recorded": {
+            "normalized_mae": 0.15578439806870764,
+            "native_mae_by_dimension": [
+              0.04203554478056607,
+              0.032785855252518085,
+              0.0385574095410487,
+              0.02410561243652776,
+              0.03730481441029116,
+              0.04417546200081904,
+              0.09610185820013624,
+              0.023718858310895846,
+              0.06784943770006652,
+              0.04375009779847905,
+              0.05643197607582633,
+              0.033174862316583106,
+              0.0657977588791596,
+              0.0629447878749076,
+              0.10222697051326689,
+              0.04182964188055438,
+              0.0028419465559644443,
+              0.005086392414211062,
+              0.0,
+              0.0,
+              0.0,
+              0.0009179589922322967,
+              0.002173929402727602
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.038239846532601755,
+              0.03188588791840882,
+              0.030747334061190595,
+              0.01784148162975959,
+              0.030406132430898028,
+              0.03974437273776292,
+              0.09211969144113649,
+              0.01830931138634251,
+              0.05587446513819902,
+              0.04326496700841818,
+              0.04346803318670782,
+              0.024671699317902564,
+              0.057884757224554585,
+              0.05756738032476731,
+              0.09864674223589165,
+              0.030859292445515885,
+              0.0022619809860140346,
+              0.005108076591245427,
+              0.0,
+              0.0,
+              0.0,
+              0.0006920996665656864,
+              0.0021653610155097113
+            ],
+            "joint_persistence_first_action_mae_rad": 0.11556146001177174,
+            "model_first_joint_action_mae_rad": 0.04731162794201423,
+            "train_mean_baseline_normalized_mae": 0.6327111131453482,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          },
+          "gray": {
+            "normalized_mae": 0.34632216796410253,
+            "native_mae_by_dimension": [
+              0.15604681792839706,
+              0.08048901182453856,
+              0.08379827839056603,
+              0.042558700710622226,
+              0.0760147619952278,
+              0.09345456163929361,
+              0.4207010988068734,
+              0.05424934655250371,
+              0.19396325727138158,
+              0.05813735864013428,
+              0.13768084912711456,
+              0.09611775754865949,
+              0.09084031076131881,
+              0.0790773370341207,
+              0.1479638420248826,
+              0.19074244089444314,
+              0.012048821446258033,
+              0.005204835500632521,
+              0.0,
+              0.0,
+              0.0,
+              0.0019241004395871523,
+              0.0035156896770564042
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.15924211965059815,
+              0.07913233264321078,
+              0.07646142744153517,
+              0.03832257023717957,
+              0.07051526309262077,
+              0.08855882110314471,
+              0.41140993430578654,
+              0.04981801479285508,
+              0.19420579131948335,
+              0.057068719539392444,
+              0.13366530072739918,
+              0.09286514020566494,
+              0.08712524033299773,
+              0.07361433294464968,
+              0.14419201083256722,
+              0.19057721576547373,
+              0.01195706216279822,
+              0.005228812201100818,
+              0.0,
+              0.0,
+              0.0,
+              0.0017031705586408408,
+              0.0035150077072666863
+            ],
+            "joint_persistence_first_action_mae_rad": 0.11556146001177174,
+            "model_first_joint_action_mae_rad": 0.12188421459830215,
+            "train_mean_baseline_normalized_mae": 0.6327111131453482,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          },
+          "mismatched": {
+            "normalized_mae": 0.36311868618773896,
+            "native_mae_by_dimension": [
+              0.21440328936071565,
+              0.0813203135143428,
+              0.053836860053605995,
+              0.029033880421066305,
+              0.0567660237575531,
+              0.061968393336935684,
+              0.5291886637565968,
+              0.12014833089962919,
+              0.09934206885201408,
+              0.04919712159926185,
+              0.07335311316920357,
+              0.04128832801366556,
+              0.0809893332351628,
+              0.07576492992981558,
+              0.1040212936639201,
+              0.355321127562949,
+              0.020420238176730637,
+              0.005109562531744461,
+              0.0,
+              0.0,
+              0.0,
+              0.0018216802012467053,
+              0.0035001731026754962
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.21431292576194894,
+              0.08132736632760706,
+              0.0436192411200107,
+              0.021817761307685916,
+              0.04766633056051128,
+              0.055773848714968356,
+              0.5272031091097156,
+              0.11594028850582472,
+              0.08443571542657624,
+              0.04857892042412015,
+              0.05403989166738012,
+              0.028521022220187237,
+              0.06878057022591474,
+              0.06685878460699905,
+              0.09762760136930052,
+              0.3532667688770299,
+              0.02029851879245933,
+              0.005133993710020109,
+              0.0,
+              0.0,
+              0.0,
+              0.001507893475927891,
+              0.0034992067210189515
+            ],
+            "joint_persistence_first_action_mae_rad": 0.11556146001177174,
+            "model_first_joint_action_mae_rad": 0.10289736348878042,
+            "train_mean_baseline_normalized_mae": 0.6327111131453482,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          }
+        },
+        "scope": "fixed-policy counterfactual image sensitivity; neither a task score nor physical validation"
+      }
+    },
+    "2": {
+      "interface": {
+        "scope": "offline recorded-image software integration; no physical robot validation",
+        "task": 2,
+        "episode": "task2_munich_000035",
+        "shadow_status": "shadow_native_proposal",
+        "checkpoint_sha256": "a0ac80c43e3c60fb5b734e9de9faec093b0e910369a62535a4a6189d28ee1122",
+        "dataset_sha256": "d16cfb9038d93177d745a162ce70094645a81cec100cba93784df70536527635",
+        "bounded_status": "bounded_proposal",
+        "stale_status": "no_command",
+        "test_only_spine_conversion": true,
+        "image_input": "already-letterboxed released validation images",
+        "input_image_shape": [
+          320,
+          320,
+          3
+        ],
+        "warm_end_to_end_median_ms": 11.04615954682231,
+        "warm_end_to_end_p95_ms": 16.727969929343093,
+        "timing_scope": "prepared-image PNG read/decode, preprocessing, model, temporal ensemble, limits; no native camera acquisition/transport or robot IO"
+      },
+      "http": {
+        "team": "AirSign",
+        "task": 2,
+        "scope": "actual loopback HTTP and RGB replay; no physical robot",
+        "validation_episode": "task2_munich_000035",
+        "requests": 15,
+        "mode": "shadow",
+        "checkpoint_sha256": "a0ac80c43e3c60fb5b734e9de9faec093b0e910369a62535a4a6189d28ee1122",
+        "dataset_sha256": "d16cfb9038d93177d745a162ce70094645a81cec100cba93784df70536527635",
+        "malformed_request_status": 400,
+        "recovery_after_invalid_input": true,
+        "rejected_non_object_json": [
+          "null",
+          "[]",
+          "42"
+        ],
+        "image_input": "already-letterboxed released validation images",
+        "input_image_shape": [
+          320,
+          320,
+          3
+        ],
+        "timing_scope": "prepared-image base64 JSON over loopback HTTP; no native camera acquisition/transport or robot IO",
+        "warm_http_median_ms": 12.421608495060354,
+        "warm_http_p95_ms": 12.65909381909296
+      },
+      "vision-ablation": {
+        "task": 2,
+        "checkpoint_sha256": "a0ac80c43e3c60fb5b734e9de9faec093b0e910369a62535a4a6189d28ee1122",
+        "split": "validation",
+        "validation_episodes": 24,
+        "dataset_coverage": "full_official_release",
+        "metrics": {
+          "recorded": {
+            "normalized_mae": 0.0731642541880598,
+            "native_mae_by_dimension": [
+              0.01622809891024853,
+              0.0013654635666780152,
+              0.013676065448333307,
+              0.007273279348498153,
+              0.01334970010422026,
+              0.016436324409691613,
+              0.01703539107635371,
+              0.0,
+              0.047359851212915256,
+              0.012424560930666712,
+              0.04440382632735407,
+              0.02958674918529165,
+              0.05905085725292499,
+              0.059316001475512574,
+              0.07134821468387743,
+              0.055492222316899494,
+              0.0
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.004595964262724097,
+              0.0011924107898608457,
+              0.0036847642541201417,
+              0.0022461298424232123,
+              0.0050023428418922294,
+              0.006677715302223268,
+              0.009871537854831275,
+              0.0,
+              0.0119811554931573,
+              0.0034660275323799526,
+              0.010486655481595834,
+              0.005640930182707823,
+              0.014378871753311415,
+              0.01769002813375284,
+              0.02632608511995438,
+              0.023888347665256895,
+              0.0
+            ],
+            "joint_persistence_first_action_mae_rad": 0.01672706600012524,
+            "model_first_joint_action_mae_rad": 0.008802901346066757,
+            "train_mean_baseline_normalized_mae": 0.7082887519351663,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          },
+          "gray": {
+            "normalized_mae": 0.25106001654900034,
+            "native_mae_by_dimension": [
+              0.02202830216707443,
+              0.00204468834216711,
+              0.022897156756281754,
+              0.01454003461570041,
+              0.04305082622815194,
+              0.02801619764503533,
+              0.03932642270853868,
+              0.0,
+              0.12417095107276128,
+              0.026089337247361795,
+              0.13467326794918222,
+              0.05100076785064079,
+              0.32132211988732434,
+              0.18916165765221044,
+              0.3282476742093278,
+              0.42891839310492874,
+              0.0
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.005804353605419577,
+              0.0018580785321038497,
+              0.006692007598783285,
+              0.00619277689212311,
+              0.017427929995654512,
+              0.012502092686742766,
+              0.028762797032161475,
+              0.0,
+              0.02842663828535197,
+              0.007954284762176092,
+              0.01827819778245078,
+              0.008369134792323013,
+              0.060314606461412346,
+              0.044475572781044276,
+              0.08875760241796826,
+              0.4143720849760919,
+              0.0
+            ],
+            "joint_persistence_first_action_mae_rad": 0.01672706600012524,
+            "model_first_joint_action_mae_rad": 0.023986862401836808,
+            "train_mean_baseline_normalized_mae": 0.7082887519351663,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          },
+          "mismatched": {
+            "normalized_mae": 0.2167681148630345,
+            "native_mae_by_dimension": [
+              0.02817836636114908,
+              0.0017545701663591933,
+              0.021442890547197654,
+              0.010288648435806203,
+              0.022037086651977917,
+              0.024568555894524842,
+              0.031452496235247394,
+              0.0,
+              0.136082054003896,
+              0.03527501445542815,
+              0.1378745356828972,
+              0.06245972980623893,
+              0.14188405584761055,
+              0.1951883611388769,
+              0.19233430722687478,
+              0.4108967006341534,
+              0.0
+            ],
+            "first_action_native_mae_by_dimension": [
+              0.006173070634888707,
+              0.0014731554542552743,
+              0.0049212293582294,
+              0.0027417245238377163,
+              0.007762423013250447,
+              0.009214364711045137,
+              0.017659501285974023,
+              0.0,
+              0.021002891221977335,
+              0.006816370272285099,
+              0.021634422577070066,
+              0.00831876860410731,
+              0.025654322513682395,
+              0.04441761912709696,
+              0.06719031247680401,
+              0.4107555225010736,
+              0.0
+            ],
+            "joint_persistence_first_action_mae_rad": 0.01672706600012524,
+            "model_first_joint_action_mae_rad": 0.017498583983893135,
+            "train_mean_baseline_normalized_mae": 0.7082887519351663,
+            "samples": 1024,
+            "metric_scope": "offline held-out action prediction; no task-success claim"
+          }
+        },
+        "scope": "fixed-policy counterfactual image sensitivity; neither a task score nor physical validation"
+      }
+    }
+  }
+}
