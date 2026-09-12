@@ -9,6 +9,11 @@ and a partial right-arm plate approach. Plate grasp/lift and full task completio
 were not verified. The [hardware skill](skills/ebim-task3-phase2/SKILL.md) captures
 the startup, frame and control knowledge for another attended session.
 
+The later [gamepad-style manipulation prototype](phase2/interactive/README.md)
+adds a persistent native worker, latest-frame camera service and short action
+prompts. Its timing and command guards are tested offline; live execution remains
+unverified.
+
 ```bash
 git clone https://github.com/EvergreenTree/AirSignRobot.git
 cd AirSignRobot/phase2
