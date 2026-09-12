@@ -1,0 +1,4 @@
+interface:
+  display_name: "AirSign Task 3 Robot Loop"
+  short_description: "Adapt Codex to a supervised robot action loop"
+  default_prompt: "Use $ebim-task3-phase2 to inspect the setup and run the offline action-loop demo before planning an attended robot session."

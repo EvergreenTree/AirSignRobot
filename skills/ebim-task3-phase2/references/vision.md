@@ -10,7 +10,7 @@ Live TF contained an identity transform from one wrist camera link to the other.
 It was a placeholder, not physical hand-eye calibration. Keep within-camera
 factory extrinsics distinct from camera-to-arm and arm-to-world transforms.
 Raw depth was not RGB registered. Reproject with factory calibration before
-using RGB keypoints. `tasks/perception.py` expects already registered depth.
+using RGB keypoints. The packaged fast action loop supplies RGB only; use a separate verified RGB-D pipeline for metric target estimation.
 
 | Depth camera | fx = fy | cx | cy |
 | --- | --- | --- | --- |

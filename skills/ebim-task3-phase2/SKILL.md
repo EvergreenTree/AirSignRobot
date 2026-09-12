@@ -1,67 +1,79 @@
 ---
 name: ebim-task3-phase2
-description: Resume AirSign EBiM Task 3 work on the two-host Mobile FR3 Duo, inspect wrist RGB-D and measured robot state, run individually reviewed finite motions, or prepare an evidence-backed Phase II submission. Use for this hardware integration, not generic robotics or simulated task completion.
+description: Adapt Codex to AirSign's supervised Mobile FR3 Duo visual action loop for EBiM Task 3. Inspect fresh wrist images and measured poses, resolve arm-base directions, and choose short frame-bound motion pulses. Includes an offline demo and two-host startup knowledge; not a completed autonomous feeding policy.
 ---
 
-# EBiM Task 3 on-site workflow
+# EBiM Task 3: observe, decide, pulse
 
-The repository root is two directories above this file. Start with
-`phase2/task3_submission/README.md` for the last measured result and evidence.
-The last session ended on 12 September 2026; historical readiness is not live readiness.
+Use this installed folder as `SKILL_DIR`; every packaged path is relative to it.
+Target agent: **Codex with GPT-6 Astra**, selected in the host application. The
+skill supplies instructions and tools, not the model or an API credential.
+The host needs local shell execution, a persistent process session and a local
+image-viewing tool. Its account must provide the selected model and network
+access. Record actual model/settings in new experiments; Astra's hardware-loop
+latency has not been measured by this package.
 
-## Establish the current state
+## Select the mode
 
-1. Read [hardware and recovery](references/hardware.md) and the site's current
-   `TMR_Two_Host_Runtime_Guide.md` (troubleshooting sections 7-8) and `驱动启动.pdf`.
-   Those private guides supply credentials; never copy credentials into source or reports.
-2. Determine whether the operator is present and the session is still authorized.
-   After departure, restrict work to offline packaging and read-only checks; do not resume motion.
-3. Reach the hosts by SSH and inspect their actual kernel, arm status, FCI state,
-   control ownership and running controllers. An SSH connection establishes Linux
-   reachability, not readiness of the drive/spine/arm interfaces.
-4. Acquire fresh camera images, depth, intrinsics and measured arm poses.
-   `phase2/scripts/probe_hardware.py` is a finite subscription-only snapshot;
-   its first received frame is not a continuous video feed.
+For offline review, follow [action-loop.md](references/action-loop.md).
+`simulated: true` is a static fixture, not live perception. For a new attended
+robot session, read [hardware.md](references/hardware.md) and
+[vision.md](references/vision.md), then the live setup in action-loop.md.
 
-## Interpret vision before movement
+The previous on-site session ended on September 12, 2026. Installation and old
+prompts do not authorize new motion. Re-establish current operator presence,
+authorized work, initialization and readiness. SSH access alone is not actuator
+readiness. Credentials and proprietary manuals come from the site operator.
 
-Read [frames and camera pitfalls](references/vision.md). Resolve left/right from
-current launch serials plus geometry and images. Do not reuse an identity TF
-between the two wrists. Do not index raw depth with RGB pixels without registration.
-Use nominal URDF geometry only as a hypothesis until checked against measured poses
-and image features. Session plate coordinates are historical evidence, never new-run targets.
+## Adapt before the fast loop
 
-## Use the tested low-level boundary
+Identify the sensor host, RT host, target arm IP and camera side from live data.
+Check measured pose, FCI/ownership/error state and the scene view. Commands use
+**arm-base XYZ axes**, not image up/down, robot-body directions or world axes.
+Verify their relation to the image using current pose and calibration; do not
+guess from the R/L letter. Plan a free-space approach and establish clearance.
+The RGB-only fast path cannot certify metric depth or finger-contact geometry.
+Use STOP when a required transform, view or clearance cannot be established.
 
-The preserved sources and exact on-site paths are documented in
-`phase2/hardware/task3_onsite/README.md`. They are supervised primitives, not a
-complete task policy. The arm helper enforces real-time scheduling; the state-only
-probe does not need a control loop. Never change motion to `kIgnore` to overcome
-a scheduling refusal. Do not use automatic homing or fault recovery as a probe.
+Keep the camera subscriber, SSH transport and native worker resident. Build C++
+once per source change, not per action. Avoid rereading all references, launching
+new probes or rewriting movement code between ordinary pulses.
 
-Take normal control only when available, activate FCI, read the current pose,
-then execute one finite, pose-anchored step after checking its swept space.
-Read state and new images again before the next step. Stop on error, contact,
-stale observations or changed ownership. The preserved helper's thresholds are
-session engineering limits, not certified collision protection or grasp forces.
-Avoid launching the site's dual-arm controller blindly: its documented startup
-can move the right arm backwards.
+## Fast decision contract
 
-The normal session supports `READ`, `STEP dx dy dz seconds`, and `RELEASE`.
-Directions are in the arm base frame. Maximum displacement is 50 mm per call,
-duration 3-8 seconds. It does not plan around obstacles or close the gripper.
-The operator's physical emergency stop remains the immediate stop; network
-release and process termination do not replace it.
+View the returned image using the host's image tool. The initial JSON response
+contains `frame`, `image`, `pose`, `expires_in_ms` and the allowed actions. A
+successful pulse returns the next observation under `next`.
 
-## End and preserve evidence
+```text
+Input: fresh image, frame ID, measured pose and reviewed approach goal.
+Output: <frame-id> R:X+ (or X-, Y+, Y-, Z+, Z- on the configured arm)
+Default pulse: 2 mm / 0.8 s. Append /fine for 1 mm.
+Use STOP for uncertainty, obstruction, contact or lost view.
+Target decision time: about 3 s. Frame-to-dispatch deadline: 5 s.
+One frame permits one pulse. Inspect next.image before another action.
+```
 
-Release owned control, verify FCI inactive and both arms idle, and use the normal
-brake-lock procedure when available. Record only states actually observed;
-unreachable hardware is not proof of locked brakes. Never send another movement
-after the operator leaves.
+LOOK refreshes expired/consumed views; STOP needs no frame; QUIT ends the session.
+Never queue actions, retry an old frame ID or fabricate timestamps. Prefer one
+host-tool invocation that sends a command, receives its result and displays
+`next.image`. Keep planning/calibration outside the fast loop.
 
-Keep raw telemetry separate from inferred geometry and task outcomes. A successful
-trajectory is not evidence of plate contact, grasp, lift, feeding or a benchmark
-score. Record human assistance and perception/transport dependencies. Use the
-current official issue form and the team's emailed deadline. A skill alone does
-not satisfy the runnable-policy submission requirements.
+The native worker enforces RT scheduling, pose agreement and finite-motion
+guards. A stopped/faulted pulse is not a completed movement: inspect state and
+resolve the cause before restarting. Never weaken limits, substitute `kIgnore`
+for motion, recover automatically or extend expiry to hide slow reasoning.
+The operator's physical emergency stop remains the immediate stop; a software
+STOP acknowledgement does not establish physical stopping.
+
+## End and report
+
+End the worker, release normally held control and confirm brake/FCI state through
+the site's procedure. Do not claim cleanup succeeded after a lost connection.
+After operator departure, continue offline work only.
+
+Record image/frame IDs, actions, measured changes, latency, faults and assistance.
+The on-site record showed 17.64 cm net right-arm approach; no plate contact,
+grasp, lift or Task 3 stage was verified. The later persistent worker is mock-
+tested and physically unverified. Gripper closing, rotation, base motion and
+coordinated bimanual control are separate development, not available actions.

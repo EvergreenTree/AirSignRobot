@@ -23,10 +23,15 @@ Inspect `/admin/api/system-status`, `/api/fci`, `/api/system/control-token` and
 the installed OpenAPI at `/api/deskapi.json`. Use the site's credentials through
 a password prompt. The tested normal API sequence was:
 
-1. `POST /api/system/control-token:take`, JSON owner and a 2-second timeout.
+1. `POST /api/system/control-token:take`, JSON `{"owner":"AirSign SSH","timeout":2}`.
 2. Use returned token in `X-Control-Token`, without logging it.
 3. `POST /api/fci:activate`; verify activation and read measured state.
 4. `POST /api/system/control-token:release` in cleanup; observed HTTP 204.
+
+The observed Desk API used HTTP Basic authentication with the site account.
+Obtain its password from the operator and keep it out of logs. Retain the token
+only in its owning session; inspect the installed schema on a different version.
+The packaged live worker does not create or release this REST lease.
 
 Locked brakes / Safe Torque Off require the site's normal initialization.
 Release of the emergency button alone does not establish full readiness.

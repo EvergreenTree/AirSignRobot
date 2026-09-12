@@ -1,12 +1,6 @@
 AirSignRobot
 Copyright 2026 AirSign
 
-This product fetches the EBiM Benchmark at build time:
-https://github.com/EBiM-Benchmark/benchmark
-The EBiM Benchmark is distributed under the Apache License 2.0 and retains its
-own copyright and notice files in the built image.
-
-The container is based on NVIDIA Isaac Sim 5.1.0. Use of that image and its
-components is governed by NVIDIA's applicable license terms and EULA.
-
-No Google Cloud, GitHub, NVIDIA NGC, or competition credentials are included.
+The optional hardware target links to the operator's libfranka installation,
+which retains its own license and copyright notices. The skill does not bundle
+robot firmware, model weights, Docker images or account/device credentials.

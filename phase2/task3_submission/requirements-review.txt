@@ -1,3 +1,0 @@
-# CPU-only evidence / feedback-controller review; no model weights or ROS.
-numpy==2.0.2
-pytest==8.4.2

@@ -1,4 +1,0 @@
-{"status": "PASS", "scope": "offline evidence integrity and derived metrics only", "files_verified": 79, "right_arm_net_displacement_m": 0.1764476117476625, "base_right_turn_estimate_degrees": 57.95783339889058, "verified_completed_task3_stages": 0, "robot_commands_sent": false}
-...............................                                          [100%]
-31 passed in 2.01s
-{"status": "PASS", "scope": "synthetic Task 3 JSONL failure cases", "cases": 3, "robot_commands_sent": false}
