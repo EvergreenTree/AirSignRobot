@@ -22,3 +22,7 @@ Bundles:
   The north-clearance gate passed, then the lateral transit stopped with the
   controller's `collision/obstruction safety abort`. This result does not
   disambiguate physical clearance from steering/control limitations.
+- [`cup-preflight-g`](cup-preflight-g/README.md): current no-base-motion
+  diagnostic. It separates prismatic spine force from revolute-arm effort and
+  stops before a joint target whose measured tracking gap exceeds the
+  participant continuity limit.

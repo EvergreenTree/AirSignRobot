@@ -5,6 +5,7 @@ FROM ${ISAAC_SIM_IMAGE}
 
 ARG EBIM_REPOSITORY=https://github.com/EBiM-Benchmark/benchmark.git
 ARG EBIM_COMMIT=cb5184574f33611f943ff42aae461678ccb538e9
+ARG AIRSIGN_REVISION=unavailable
 ARG ROOM_ASSET_SHA256=696c71577f1874d815fe29c6a58c65f0f1a0a0fb15c0d8adbb5105209f5ff883
 ARG ROBOT_ASSET_COMMIT=c2439d961b652b1eda6122bf530c58cb9559b219
 ARG ROBOT_ASSET_SHA256=aa1a833de48cc543c73957461dab82fe0979320b7c0b6a0a113d24b500075e5c
@@ -14,13 +15,15 @@ LABEL org.opencontainers.image.description="AirSign actuator-driven participant 
 LABEL org.opencontainers.image.source="https://github.com/EvergreenTree/AirSignRobot"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.base.name="nvcr.io/nvidia/isaac-sim:5.1.0@sha256:f3563cb2ba0c18af0b2fb321360dcb73a917b899f879e3213623d6bee484fa54"
-LABEL org.opencontainers.image.revision="${EBIM_COMMIT}"
+LABEL org.opencontainers.image.revision="${AIRSIGN_REVISION}"
+LABEL org.airsignrobot.ebim.revision="${EBIM_COMMIT}"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 USER root
 
 ENV EBIM_ROOT=/workspace/EBiM_Challenge \
     EBIM_COMMIT=${EBIM_COMMIT} \
+    AIRSIGN_REVISION=${AIRSIGN_REVISION} \
     ROOM_ASSET_SHA256=${ROOM_ASSET_SHA256} \
     ROBOT_ASSET_SHA256=${ROBOT_ASSET_SHA256} \
     ACCEPT_EULA=Y \
@@ -65,7 +68,8 @@ RUN git init "${EBIM_ROOT}" \
         "${EBIM_ROOT}/task1_isaacsim/assets/Robotiq_2f_85_with_d405_mobile_fr3_duo_v0_2.usd" \
         | sha256sum --check --strict \
     && mkdir -p /opt/airsign \
-    && printf '%s\n' "${EBIM_COMMIT}" > /opt/airsign/benchmark-commit
+    && printf '%s\n' "${EBIM_COMMIT}" > /opt/airsign/benchmark-commit \
+    && printf '%s\n' "${AIRSIGN_REVISION}" > /opt/airsign/source-revision
 
 ENV ROS_DISTRO=jazzy \
     RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
