@@ -1,5 +1,11 @@
 # AirSign - EBiM Task 3 technical report
 
+**Published website:** [English (default)](https://airsign-ebim-track3.chattytransformer.chatgpt.site/)
+| [中文版](https://airsign-ebim-track3.chattytransformer.chatgpt.site/zh)
+
+The website presents the July research and simulator background. The report
+below is the September Phase II hardware and skill deliverable.
+
 **Submission route: Technical Report.** The report is the primary deliverable;
 `ebim-task3-phase2` is the accompanying installable Codex skill. No Docker image
 is submitted. The [official submissions README](https://github.com/EBiM-Benchmark/submissions)
